@@ -352,8 +352,9 @@
     #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI
 #endif /* CONFIG_IDF_TARGET Check */
 
-/* Debug options:
 
+
+/* Debug options:
 #define ESP_VERIFY_MEMBLOCK
 #define DEBUG_WOLFSSL
 #define DEBUG_WOLFSSL_VERBOSE
