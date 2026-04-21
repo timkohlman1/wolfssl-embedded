@@ -20,6 +20,11 @@
  */
 
 /* This user_settings.h is for Espressif ESP-IDF */
+
+#ifndef WOLFSSL_USER_SETTINGS
+#define WOLFSSL_USER_SETTINGS
+#endif
+
 #include <sdkconfig.h>
 
 /* The Espressif sdkconfig will have chipset info.
@@ -69,13 +74,15 @@
 #define NO_RC4
 #define NO_MD4
 
+
+
 #define BENCH_EMBEDDED
 #define USE_CERT_BUFFERS_2048
 
 /* TLS 1.3                                 */
 #define WOLFSSL_TLS13
 #define HAVE_TLS_EXTENSIONS
-#define WC_RSA_PSS
+
 #define HAVE_HKDF
 #define HAVE_AEAD
 #define HAVE_SUPPORTED_CURVES
@@ -88,7 +95,7 @@
 
 #define HAVE_AESGCM
 
-#define WOLFSSL_RIPEMD
+//#define WOLFSSL_RIPEMD
 /* when you want to use SHA224 */
 #define WOLFSSL_SHA224
 
@@ -113,7 +120,7 @@
 /* when you want to use pkcs7 */
 /* #define HAVE_PKCS7 */
 
-#define HAVE_PKCS7
+//#define HAVE_PKCS7
 
 #if defined(HAVE_PKCS7)
     #define HAVE_AES_KEYWRAP
@@ -226,13 +233,13 @@
 
 #if defined(CONFIG_IDF_TARGET_ESP32)
     /* wolfSSL HW Acceleration supported on ESP32. Uncomment to disable: */
-    /*  #define NO_ESP32_CRYPT                 */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_HASH    */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_AES     */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_MP_MUL  */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_MULMOD  */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_EXPTMOD */
+    #define NO_ESP32_CRYPT                 
+    #define NO_WOLFSSL_ESP32_CRYPT_HASH    
+    #define NO_WOLFSSL_ESP32_CRYPT_AES     
+    #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI 
+    #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_MP_MUL  
+    #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_MULMOD  
+    #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_EXPTMOD 
 
     /*  These are defined automatically in esp32-crypt.h, here for clarity:  */
     #define NO_WOLFSSL_ESP32_CRYPT_HASH_SHA224 /* no SHA224 HW on ESP32  */
@@ -254,16 +261,14 @@
     /***** END CONFIG_IDF_TARGET_ESP32S2 *****/
 
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-    /* wolfSSL HW Acceleration supported on ESP32-S3. Uncomment to disable: */
-    /*  #define NO_ESP32_CRYPT                         */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_HASH            */
-    /* Note: There's no AES192 HW on the ESP32-S3; falls back to SW */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_AES             */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI         */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_MP_MUL  */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_MULMOD  */
-    /*  #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_EXPTMOD */
-    /***** END CONFIG_IDF_TARGET_ESP32S3 *****/
+    #define NO_ESP32_CRYPT                 
+    #define NO_WOLFSSL_ESP32_CRYPT_HASH    
+    #define NO_WOLFSSL_ESP32_CRYPT_AES     
+    #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI 
+    #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_MP_MUL  
+    #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_MULMOD  
+    #define NO_WOLFSSL_ESP32_CRYPT_RSA_PRI_EXPTMOD 
+
 
 #elif defined(CONFIG_IDF_TARGET_ESP32C2) || \
       defined(CONFIG_IDF_TARGET_ESP8684)
