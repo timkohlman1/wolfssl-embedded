@@ -37,6 +37,10 @@
 
 #include <wolfssl/wolfcrypt/libwolfssl_sources.h>
 
+#ifdef PQC_TLS_INSTRUMENTATION
+#include "pqc_tls_instrumentation.h"
+#endif
+
 /*
 ASN Options:
  * NO_ASN_TIME_CHECK: Disables ASN time checks (avoiding the ASN_BEFORE_DATE_E
@@ -17521,9 +17525,17 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 case RSAPSSk:
                 if (sigOID == RSAPSSk) {
                     /* TODO: pkCbRsaPss - RSA PSS callback. */
+#ifdef PQC_TLS_INSTRUMENTATION
+                    PQC_TLS_InstrumentationPrimitiveBegin(
+                        PQC_TLS_PRIMITIVE_RSA_VERIFY);
+#endif
                     ret = wc_RsaPSS_VerifyInline_ex(sigCtx->sigCpy, sigSz,
                         &sigCtx->out, sigCtx->hash, sigCtx->mgf,
                         sigCtx->saltLen, sigCtx->key.rsa);
+#ifdef PQC_TLS_INSTRUMENTATION
+                    PQC_TLS_InstrumentationPrimitiveEnd(
+                        PQC_TLS_PRIMITIVE_RSA_VERIFY);
+#endif
                 }
                 else
                 #endif
@@ -17544,8 +17556,16 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 #endif /* WOLFSSL_RENESAS_FSPSM_TLS */
                 #endif /* HAVE_PK_CALLBACKS */
                     {
+#ifdef PQC_TLS_INSTRUMENTATION
+                        PQC_TLS_InstrumentationPrimitiveBegin(
+                            PQC_TLS_PRIMITIVE_RSA_VERIFY);
+#endif
                         ret = wc_RsaSSL_VerifyInline(sigCtx->sigCpy, sigSz,
                                                  &sigCtx->out, sigCtx->key.rsa);
+#ifdef PQC_TLS_INSTRUMENTATION
+                        PQC_TLS_InstrumentationPrimitiveEnd(
+                            PQC_TLS_PRIMITIVE_RSA_VERIFY);
+#endif
                     }
                 }
                 break;
@@ -17660,8 +17680,16 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 case DILITHIUM_LEVEL3k:
                 case DILITHIUM_LEVEL5k:
                 {
+#ifdef PQC_TLS_INSTRUMENTATION
+                    PQC_TLS_InstrumentationPrimitiveBegin(
+                        PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
+#endif
                     ret = wc_MlDsaKey_Verify(sigCtx->key.mldsa, sig, sigSz,
                                              buf, bufSz, &sigCtx->verify);
+#ifdef PQC_TLS_INSTRUMENTATION
+                    PQC_TLS_InstrumentationPrimitiveEnd(
+                        PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
+#endif
                     break;
                 }
                 #endif
@@ -17669,8 +17697,16 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 case ML_DSA_65k:
                 case ML_DSA_87k:
                 {
+#ifdef PQC_TLS_INSTRUMENTATION
+                    PQC_TLS_InstrumentationPrimitiveBegin(
+                        PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
+#endif
                     ret = wc_MlDsaKey_VerifyCtx(sigCtx->key.mldsa, sig, sigSz,
                         NULL, 0, buf, bufSz, &sigCtx->verify);
+#ifdef PQC_TLS_INSTRUMENTATION
+                    PQC_TLS_InstrumentationPrimitiveEnd(
+                        PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
+#endif
                     break;
                 }
             #endif /* WOLFSSL_HAVE_MLDSA */

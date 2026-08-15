@@ -73,6 +73,9 @@ on the specific device platform.
 #include <wolfssl/wolfcrypt/sha256.h>
 #include <wolfssl/wolfcrypt/cpuid.h>
 #include <wolfssl/wolfcrypt/hash.h>
+#ifdef PQC_TLS_INSTRUMENTATION
+#include "pqc_tls_instrumentation.h"
+#endif
 
 #ifdef WOLF_CRYPTO_CB
     #include <wolfssl/wolfcrypt/cryptocb.h>
@@ -1672,7 +1675,16 @@ static WC_INLINE int Transform_Sha256_Len(wc_Sha256* sha256, const byte* data,
         }
     #endif /* WOLFSSL_ASYNC_CRYPT */
 
-        return Sha256Update(sha256, data, len);
+#ifdef PQC_TLS_INSTRUMENTATION
+        PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_SHA256);
+#endif
+        {
+            int pqcRet = Sha256Update(sha256, data, len);
+#ifdef PQC_TLS_INSTRUMENTATION
+            PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_SHA256);
+#endif
+            return pqcRet;
+        }
     }
 #endif
 
@@ -1884,8 +1896,14 @@ static WC_INLINE int Transform_Sha256_Len(wc_Sha256* sha256, const byte* data,
         }
     #endif /* WOLFSSL_ASYNC_CRYPT */
 
+#ifdef PQC_TLS_INSTRUMENTATION
+        PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_SHA256);
+#endif
         ret = Sha256Final(sha256);
         if (ret != 0) {
+#ifdef PQC_TLS_INSTRUMENTATION
+            PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_SHA256);
+#endif
             return ret;
         }
 
@@ -1897,7 +1915,11 @@ static WC_INLINE int Transform_Sha256_Len(wc_Sha256* sha256, const byte* data,
     #endif
         XMEMCPY(hash, sha256->digest, WC_SHA256_DIGEST_SIZE);
 
-        return InitSha256(sha256);  /* reset state */
+        ret = InitSha256(sha256);  /* reset state */
+#ifdef PQC_TLS_INSTRUMENTATION
+        PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_SHA256);
+#endif
+        return ret;
     }
 
 #if defined(OPENSSL_EXTRA) || defined(HAVE_CURL)

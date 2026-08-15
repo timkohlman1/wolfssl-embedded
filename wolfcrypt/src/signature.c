@@ -32,6 +32,10 @@
 #include <wolfssl/wolfcrypt/rsa.h>
 #endif
 
+#ifdef PQC_TLS_INSTRUMENTATION
+#include "pqc_tls_instrumentation.h"
+#endif
+
 /* If ECC and RSA are disabled then disable signature wrapper */
 #if (!defined(HAVE_ECC) || (defined(HAVE_ECC) && !defined(HAVE_ECC_SIGN) \
     && !defined(HAVE_ECC_VERIFY))) && defined(NO_RSA)
@@ -314,9 +318,18 @@ int wc_SignatureVerifyHash(
                     ret = wc_AsyncWait(ret, &((RsaKey*)key)->asyncDev,
                         WC_ASYNC_FLAG_CALL_AGAIN);
                 #endif
-                if (ret >= 0)
-                        ret = wc_RsaSSL_VerifyInline(plain_data, sig_len,
-                            &plain_ptr, (RsaKey*)key);
+                if (ret >= 0) {
+#ifdef PQC_TLS_INSTRUMENTATION
+                    PQC_TLS_InstrumentationPrimitiveBegin(
+                        PQC_TLS_PRIMITIVE_RSA_VERIFY);
+#endif
+                    ret = wc_RsaSSL_VerifyInline(plain_data, sig_len,
+                        &plain_ptr, (RsaKey*)key);
+#ifdef PQC_TLS_INSTRUMENTATION
+                    PQC_TLS_InstrumentationPrimitiveEnd(
+                        PQC_TLS_PRIMITIVE_RSA_VERIFY);
+#endif
+                }
                 } while (ret == WC_NO_ERR_TRACE(WC_PENDING_E));
                 if (ret >= 0 && plain_ptr) {
                     if ((word32)ret == hash_len &&

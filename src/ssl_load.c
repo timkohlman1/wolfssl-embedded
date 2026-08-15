@@ -1590,8 +1590,9 @@ static void ProcessBufferCertSetHave(WOLFSSL_CTX* ctx, WOLFSSL* ssl,
 
 #if defined(HAVE_ECC) || defined(HAVE_ED25519) || defined(HAVE_ED448) || \
     defined(HAVE_FALCON) || defined(WOLFSSL_HAVE_MLDSA) || !defined(NO_RSA)
-    #if defined(HAVE_ECC) || defined(HAVE_ED25519) || defined(HAVE_ED448)
-    /* Set the private key curve OID. */
+    #if defined(HAVE_ECC) || defined(HAVE_ED25519) || defined(HAVE_ED448) || \
+        defined(HAVE_FALCON) || defined(WOLFSSL_HAVE_MLDSA)
+    /* Retain the certificate public-key OID for signature-algorithm matching. */
     if (ssl != NULL) {
         ssl->pkCurveOID = cert->pkCurveOID;
     }

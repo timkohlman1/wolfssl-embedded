@@ -116,6 +116,9 @@
  */
 
 #include <wolfssl/wolfcrypt/libwolfssl_sources.h>
+#ifdef PQC_TLS_INSTRUMENTATION
+#include "pqc_tls_instrumentation.h"
+#endif
 
 #ifndef WOLFCRYPT_ONLY
 
@@ -8360,7 +8363,15 @@ static int TLSX_KeyShare_GenX25519Key(WOLFSSL *ssl, KeyShareEntry* kse)
                 if (ret != 0)
                     return ret;
             #endif
+#ifdef PQC_TLS_INSTRUMENTATION
+                PQC_TLS_InstrumentationPrimitiveBegin(
+                    PQC_TLS_PRIMITIVE_X25519_KEYGEN);
+#endif
                 ret = wc_curve25519_make_key(ssl->rng, CURVE25519_KEYSIZE, key);
+#ifdef PQC_TLS_INSTRUMENTATION
+                PQC_TLS_InstrumentationPrimitiveEnd(
+                    PQC_TLS_PRIMITIVE_X25519_KEYGEN);
+#endif
 
                 /* Handle async pending response */
             #ifdef WOLFSSL_ASYNC_CRYPT
@@ -8972,7 +8983,21 @@ static int TLSX_KeyShare_GenPqcKeyClient(WOLFSSL *ssl, KeyShareEntry* kse)
     }
 
     if (ret == 0) {
+#ifdef PQC_TLS_INSTRUMENTATION
+    #if defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
+        PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_MLKEM768_KEYGEN);
+    #elif defined(PQC_TLS_ENABLE_MLKEM_1024) && PQC_TLS_ENABLE_MLKEM_1024
+        PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_MLKEM1024_KEYGEN);
+    #endif
+#endif
         ret = wc_MlKemKey_MakeKey(kem, ssl->rng);
+#ifdef PQC_TLS_INSTRUMENTATION
+    #if defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
+        PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_MLKEM768_KEYGEN);
+    #elif defined(PQC_TLS_ENABLE_MLKEM_1024) && PQC_TLS_ENABLE_MLKEM_1024
+        PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_MLKEM1024_KEYGEN);
+    #endif
+#endif
         if (ret != 0) {
             WOLFSSL_MSG("ML-KEM keygen failure");
         }
@@ -9686,8 +9711,16 @@ static int TLSX_KeyShare_ProcessX25519_ex(WOLFSSL* ssl,
             if (ret != 0)
                 return ret;
         #endif
+#ifdef PQC_TLS_INSTRUMENTATION
+            PQC_TLS_InstrumentationPrimitiveBegin(
+                PQC_TLS_PRIMITIVE_X25519_SHARED_SECRET);
+#endif
             ret = wc_curve25519_shared_secret_ex(key, ssl->peerX25519Key,
                         ssOutput, ssOutSz, EC25519_LITTLE_ENDIAN);
+#ifdef PQC_TLS_INSTRUMENTATION
+            PQC_TLS_InstrumentationPrimitiveEnd(
+                PQC_TLS_PRIMITIVE_X25519_SHARED_SECRET);
+#endif
         #ifdef WOLFSSL_ASYNC_CRYPT
             if (ret == WC_NO_ERR_TRACE(WC_PENDING_E)) {
                 return wolfSSL_AsyncPush(ssl, &key->asyncDev);
@@ -10132,8 +10165,26 @@ static int TLSX_KeyShare_ProcessPqcClient_ex(WOLFSSL* ssl,
     }
     if (ret == 0) {
         PRIVATE_KEY_UNLOCK();
+#ifdef PQC_TLS_INSTRUMENTATION
+    #if defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
+        PQC_TLS_InstrumentationPrimitiveBegin(
+            PQC_TLS_PRIMITIVE_MLKEM768_DECAPSULATE);
+    #elif defined(PQC_TLS_ENABLE_MLKEM_1024) && PQC_TLS_ENABLE_MLKEM_1024
+        PQC_TLS_InstrumentationPrimitiveBegin(
+            PQC_TLS_PRIMITIVE_MLKEM1024_DECAPSULATE);
+    #endif
+#endif
         ret = wc_MlKemKey_Decapsulate(kem, ssOutput,
                                       keyShareEntry->ke, ctSz);
+#ifdef PQC_TLS_INSTRUMENTATION
+    #if defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
+        PQC_TLS_InstrumentationPrimitiveEnd(
+            PQC_TLS_PRIMITIVE_MLKEM768_DECAPSULATE);
+    #elif defined(PQC_TLS_ENABLE_MLKEM_1024) && PQC_TLS_ENABLE_MLKEM_1024
+        PQC_TLS_InstrumentationPrimitiveEnd(
+            PQC_TLS_PRIMITIVE_MLKEM1024_DECAPSULATE);
+    #endif
+#endif
         PRIVATE_KEY_LOCK();
         if (ret != 0) {
             WOLFSSL_MSG("wc_MlKemKey decapsulation failure.");
