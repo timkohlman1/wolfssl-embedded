@@ -5792,7 +5792,13 @@ int EccSign(WOLFSSL* ssl, const byte* in, word32 inSz, byte* out,
     else
 #endif /* HAVE_PK_CALLBACKS */
     {
+#ifdef PQC_TLS_INSTRUMENTATION
+        PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_ECDSA_SIGN);
+#endif
         ret = wc_ecc_sign_hash(in, inSz, out, outSz, ssl->rng, key);
+#ifdef PQC_TLS_INSTRUMENTATION
+        PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_ECDSA_SIGN);
+#endif
     }
 
     /* Handle async pending response */
@@ -5854,7 +5860,13 @@ int EccVerify(WOLFSSL* ssl, const byte* in, word32 inSz, const byte* out,
     #endif
 #endif /* HAVE_PK_CALLBACKS  */
     {
+#ifdef PQC_TLS_INSTRUMENTATION
+        PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_ECDSA_VERIFY);
+#endif
         ret = wc_ecc_verify_hash(in, inSz, out, outSz, &ssl->eccVerifyRes, key);
+#ifdef PQC_TLS_INSTRUMENTATION
+        PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_ECDSA_VERIFY);
+#endif
     }
 
     /* Handle async pending response */

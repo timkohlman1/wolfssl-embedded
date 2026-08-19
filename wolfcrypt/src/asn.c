@@ -17640,9 +17640,17 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 #endif /* WOLFSSL_RENESAS_FSPSM_TLS */
                 #endif /* HAVE_PK_CALLBACKS */
                     {
+#ifdef PQC_TLS_INSTRUMENTATION
+                        PQC_TLS_InstrumentationPrimitiveBegin(
+                            PQC_TLS_PRIMITIVE_ECDSA_VERIFY);
+#endif
                         ret = wc_ecc_verify_hash(sig, sigSz, sigCtx->digest,
                             (word32)sigCtx->digestSz, &sigCtx->verify,
                             sigCtx->key.ecc);
+#ifdef PQC_TLS_INSTRUMENTATION
+                        PQC_TLS_InstrumentationPrimitiveEnd(
+                            PQC_TLS_PRIMITIVE_ECDSA_VERIFY);
+#endif
                     }
                     break;
                 }

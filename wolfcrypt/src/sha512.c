@@ -93,6 +93,9 @@
 #include <wolfssl/wolfcrypt/sha512.h>
 #include <wolfssl/wolfcrypt/cpuid.h>
 #include <wolfssl/wolfcrypt/hash.h>
+#ifdef PQC_TLS_INSTRUMENTATION
+#include "pqc_tls_instrumentation.h"
+#endif
 
 #ifdef WOLF_CRYPTO_CB
     #include <wolfssl/wolfcrypt/cryptocb.h>
@@ -2626,7 +2629,16 @@ int wc_Sha384Update(wc_Sha384* sha384, const byte* data, word32 len)
     }
 #endif /* WOLFSSL_ASYNC_CRYPT */
 
-    return Sha512Update((wc_Sha512*)sha384, data, len);
+#ifdef PQC_TLS_INSTRUMENTATION
+    PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_SHA384);
+#endif
+    {
+        int pqcRet = Sha512Update((wc_Sha512*)sha384, data, len);
+#ifdef PQC_TLS_INSTRUMENTATION
+        PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_SHA384);
+#endif
+        return pqcRet;
+    }
 }
 
 
@@ -2673,13 +2685,24 @@ int wc_Sha384Final(wc_Sha384* sha384, byte* hash)
     }
 #endif /* WOLFSSL_ASYNC_CRYPT */
 
+#ifdef PQC_TLS_INSTRUMENTATION
+    PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_SHA384);
+#endif
     ret = Sha512Final((wc_Sha512*)sha384);
-    if (ret != 0)
+    if (ret != 0) {
+#ifdef PQC_TLS_INSTRUMENTATION
+        PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_SHA384);
+#endif
         return ret;
+    }
 
     XMEMCPY(hash, sha384->digest, WC_SHA384_DIGEST_SIZE);
 
-    return InitSha384(sha384);  /* reset state */
+    ret = InitSha384(sha384);  /* reset state */
+#ifdef PQC_TLS_INSTRUMENTATION
+    PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_SHA384);
+#endif
+    return ret;
 }
 
 int wc_InitSha384_ex(wc_Sha384* sha384, void* heap, int devId)
