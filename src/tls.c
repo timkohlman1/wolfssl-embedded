@@ -8984,7 +8984,9 @@ static int TLSX_KeyShare_GenPqcKeyClient(WOLFSSL *ssl, KeyShareEntry* kse)
 
     if (ret == 0) {
 #ifdef PQC_TLS_INSTRUMENTATION
-    #if defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
+    #if defined(PQC_TLS_ENABLE_MLKEM_512) && PQC_TLS_ENABLE_MLKEM_512
+        PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_MLKEM512_KEYGEN);
+    #elif defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
         PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_MLKEM768_KEYGEN);
     #elif defined(PQC_TLS_ENABLE_MLKEM_1024) && PQC_TLS_ENABLE_MLKEM_1024
         PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_MLKEM1024_KEYGEN);
@@ -8992,7 +8994,9 @@ static int TLSX_KeyShare_GenPqcKeyClient(WOLFSSL *ssl, KeyShareEntry* kse)
 #endif
         ret = wc_MlKemKey_MakeKey(kem, ssl->rng);
 #ifdef PQC_TLS_INSTRUMENTATION
-    #if defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
+    #if defined(PQC_TLS_ENABLE_MLKEM_512) && PQC_TLS_ENABLE_MLKEM_512
+        PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_MLKEM512_KEYGEN);
+    #elif defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
         PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_MLKEM768_KEYGEN);
     #elif defined(PQC_TLS_ENABLE_MLKEM_1024) && PQC_TLS_ENABLE_MLKEM_1024
         PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_MLKEM1024_KEYGEN);
@@ -10166,7 +10170,10 @@ static int TLSX_KeyShare_ProcessPqcClient_ex(WOLFSSL* ssl,
     if (ret == 0) {
         PRIVATE_KEY_UNLOCK();
 #ifdef PQC_TLS_INSTRUMENTATION
-    #if defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
+    #if defined(PQC_TLS_ENABLE_MLKEM_512) && PQC_TLS_ENABLE_MLKEM_512
+        PQC_TLS_InstrumentationPrimitiveBegin(
+            PQC_TLS_PRIMITIVE_MLKEM512_DECAPSULATE);
+    #elif defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
         PQC_TLS_InstrumentationPrimitiveBegin(
             PQC_TLS_PRIMITIVE_MLKEM768_DECAPSULATE);
     #elif defined(PQC_TLS_ENABLE_MLKEM_1024) && PQC_TLS_ENABLE_MLKEM_1024
@@ -10177,7 +10184,10 @@ static int TLSX_KeyShare_ProcessPqcClient_ex(WOLFSSL* ssl,
         ret = wc_MlKemKey_Decapsulate(kem, ssOutput,
                                       keyShareEntry->ke, ctSz);
 #ifdef PQC_TLS_INSTRUMENTATION
-    #if defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
+    #if defined(PQC_TLS_ENABLE_MLKEM_512) && PQC_TLS_ENABLE_MLKEM_512
+        PQC_TLS_InstrumentationPrimitiveEnd(
+            PQC_TLS_PRIMITIVE_MLKEM512_DECAPSULATE);
+    #elif defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
         PQC_TLS_InstrumentationPrimitiveEnd(
             PQC_TLS_PRIMITIVE_MLKEM768_DECAPSULATE);
     #elif defined(PQC_TLS_ENABLE_MLKEM_1024) && PQC_TLS_ENABLE_MLKEM_1024
