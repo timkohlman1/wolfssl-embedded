@@ -1676,12 +1676,12 @@ static WC_INLINE int Transform_Sha256_Len(wc_Sha256* sha256, const byte* data,
     #endif /* WOLFSSL_ASYNC_CRYPT */
 
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_SHA256);
+        PQC_TLS_InstrumentationBegin(PQC_TLS_PRIMITIVE_SHA256);
 #endif
         {
             int pqcRet = Sha256Update(sha256, data, len);
 #ifdef PQC_TLS_INSTRUMENTATION
-            PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_SHA256);
+            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_SHA256, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
 #endif
             return pqcRet;
         }
@@ -1897,12 +1897,12 @@ static WC_INLINE int Transform_Sha256_Len(wc_Sha256* sha256, const byte* data,
     #endif /* WOLFSSL_ASYNC_CRYPT */
 
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationPrimitiveBegin(PQC_TLS_PRIMITIVE_SHA256);
+        PQC_TLS_InstrumentationBegin(PQC_TLS_PRIMITIVE_SHA256);
 #endif
         ret = Sha256Final(sha256);
         if (ret != 0) {
 #ifdef PQC_TLS_INSTRUMENTATION
-            PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_SHA256);
+            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_SHA256, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
 #endif
             return ret;
         }
@@ -1917,7 +1917,7 @@ static WC_INLINE int Transform_Sha256_Len(wc_Sha256* sha256, const byte* data,
 
         ret = InitSha256(sha256);  /* reset state */
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationPrimitiveEnd(PQC_TLS_PRIMITIVE_SHA256);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_SHA256, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
 #endif
         return ret;
     }

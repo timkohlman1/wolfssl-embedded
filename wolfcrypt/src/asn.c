@@ -17526,15 +17526,15 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 if (sigOID == RSAPSSk) {
                     /* TODO: pkCbRsaPss - RSA PSS callback. */
 #ifdef PQC_TLS_INSTRUMENTATION
-                    PQC_TLS_InstrumentationPrimitiveBegin(
+                    PQC_TLS_InstrumentationBegin(
                         PQC_TLS_PRIMITIVE_RSA_VERIFY);
 #endif
                     ret = wc_RsaPSS_VerifyInline_ex(sigCtx->sigCpy, sigSz,
                         &sigCtx->out, sigCtx->hash, sigCtx->mgf,
                         sigCtx->saltLen, sigCtx->key.rsa);
 #ifdef PQC_TLS_INSTRUMENTATION
-                    PQC_TLS_InstrumentationPrimitiveEnd(
-                        PQC_TLS_PRIMITIVE_RSA_VERIFY);
+                    PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_VERIFY,
+            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
 #endif
                 }
                 else
@@ -17557,14 +17557,14 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 #endif /* HAVE_PK_CALLBACKS */
                     {
 #ifdef PQC_TLS_INSTRUMENTATION
-                        PQC_TLS_InstrumentationPrimitiveBegin(
+                        PQC_TLS_InstrumentationBegin(
                             PQC_TLS_PRIMITIVE_RSA_VERIFY);
 #endif
                         ret = wc_RsaSSL_VerifyInline(sigCtx->sigCpy, sigSz,
                                                  &sigCtx->out, sigCtx->key.rsa);
 #ifdef PQC_TLS_INSTRUMENTATION
-                        PQC_TLS_InstrumentationPrimitiveEnd(
-                            PQC_TLS_PRIMITIVE_RSA_VERIFY);
+                        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_VERIFY,
+            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
 #endif
                     }
                 }
@@ -17641,15 +17641,15 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 #endif /* HAVE_PK_CALLBACKS */
                     {
 #ifdef PQC_TLS_INSTRUMENTATION
-                        PQC_TLS_InstrumentationPrimitiveBegin(
+                        PQC_TLS_InstrumentationBegin(
                             PQC_TLS_PRIMITIVE_ECDSA_VERIFY);
 #endif
                         ret = wc_ecc_verify_hash(sig, sigSz, sigCtx->digest,
                             (word32)sigCtx->digestSz, &sigCtx->verify,
                             sigCtx->key.ecc);
 #ifdef PQC_TLS_INSTRUMENTATION
-                        PQC_TLS_InstrumentationPrimitiveEnd(
-                            PQC_TLS_PRIMITIVE_ECDSA_VERIFY);
+                        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_ECDSA_VERIFY,
+            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
 #endif
                     }
                     break;
@@ -17689,14 +17689,14 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 case DILITHIUM_LEVEL5k:
                 {
 #ifdef PQC_TLS_INSTRUMENTATION
-                    PQC_TLS_InstrumentationPrimitiveBegin(
+                    PQC_TLS_InstrumentationBegin(
                         PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
 #endif
                     ret = wc_MlDsaKey_Verify(sigCtx->key.mldsa, sig, sigSz,
                                              buf, bufSz, &sigCtx->verify);
 #ifdef PQC_TLS_INSTRUMENTATION
-                    PQC_TLS_InstrumentationPrimitiveEnd(
-                        PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
+                    PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_VERIFY,
+            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
 #endif
                     break;
                 }
@@ -17706,14 +17706,14 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 case ML_DSA_87k:
                 {
 #ifdef PQC_TLS_INSTRUMENTATION
-                    PQC_TLS_InstrumentationPrimitiveBegin(
+                    PQC_TLS_InstrumentationBegin(
                         PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
 #endif
                     ret = wc_MlDsaKey_VerifyCtx(sigCtx->key.mldsa, sig, sigSz,
                         NULL, 0, buf, bufSz, &sigCtx->verify);
 #ifdef PQC_TLS_INSTRUMENTATION
-                    PQC_TLS_InstrumentationPrimitiveEnd(
-                        PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
+                    PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_VERIFY,
+            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
 #endif
                     break;
                 }
