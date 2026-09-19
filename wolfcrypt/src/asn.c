@@ -17534,7 +17534,7 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                         sigCtx->saltLen, sigCtx->key.rsa);
 #ifdef PQC_TLS_INSTRUMENTATION
                     PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_VERIFY,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
 #endif
                 }
                 else
@@ -17564,7 +17564,7 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                                                  &sigCtx->out, sigCtx->key.rsa);
 #ifdef PQC_TLS_INSTRUMENTATION
                         PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_VERIFY,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
 #endif
                     }
                 }
@@ -17649,7 +17649,8 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                             sigCtx->key.ecc);
 #ifdef PQC_TLS_INSTRUMENTATION
                         PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_ECDSA_VERIFY,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+                            (ret != 0) ? ret :
+                            ((sigCtx->verify != 0) ? 0 : ASN_SIG_CONFIRM_E));
 #endif
                     }
                     break;
@@ -17696,7 +17697,8 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                                              buf, bufSz, &sigCtx->verify);
 #ifdef PQC_TLS_INSTRUMENTATION
                     PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_VERIFY,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+                        (ret != 0) ? ret :
+                        ((sigCtx->verify != 0) ? 0 : ASN_SIG_CONFIRM_E));
 #endif
                     break;
                 }
@@ -17713,7 +17715,8 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                         NULL, 0, buf, bufSz, &sigCtx->verify);
 #ifdef PQC_TLS_INSTRUMENTATION
                     PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_VERIFY,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+                        (ret != 0) ? ret :
+                        ((sigCtx->verify != 0) ? 0 : ASN_SIG_CONFIRM_E));
 #endif
                     break;
                 }

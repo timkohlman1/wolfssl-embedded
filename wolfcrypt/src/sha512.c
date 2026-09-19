@@ -2635,7 +2635,7 @@ int wc_Sha384Update(wc_Sha384* sha384, const byte* data, word32 len)
     {
         int pqcRet = Sha512Update((wc_Sha512*)sha384, data, len);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_SHA384, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_SHA384, pqcRet);
 #endif
         return pqcRet;
     }
@@ -2691,7 +2691,7 @@ int wc_Sha384Final(wc_Sha384* sha384, byte* hash)
     ret = Sha512Final((wc_Sha512*)sha384);
     if (ret != 0) {
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_SHA384, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_SHA384, ret);
 #endif
         return ret;
     }
@@ -2700,7 +2700,7 @@ int wc_Sha384Final(wc_Sha384* sha384, byte* hash)
 
     ret = InitSha384(sha384);  /* reset state */
 #ifdef PQC_TLS_INSTRUMENTATION
-    PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_SHA384, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+    PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_SHA384, ret);
 #endif
     return ret;
 }

@@ -8370,7 +8370,7 @@ static int TLSX_KeyShare_GenX25519Key(WOLFSSL *ssl, KeyShareEntry* kse)
                 ret = wc_curve25519_make_key(ssl->rng, CURVE25519_KEYSIZE, key);
 #ifdef PQC_TLS_INSTRUMENTATION
                 PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_X25519_KEYGEN,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
 #endif
 
                 /* Handle async pending response */
@@ -8995,11 +8995,11 @@ static int TLSX_KeyShare_GenPqcKeyClient(WOLFSSL *ssl, KeyShareEntry* kse)
         ret = wc_MlKemKey_MakeKey(kem, ssl->rng);
 #ifdef PQC_TLS_INSTRUMENTATION
     #if defined(PQC_TLS_ENABLE_MLKEM_512) && PQC_TLS_ENABLE_MLKEM_512
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLKEM512_KEYGEN, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLKEM512_KEYGEN, ret);
     #elif defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLKEM768_KEYGEN, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLKEM768_KEYGEN, ret);
     #elif defined(PQC_TLS_ENABLE_MLKEM_1024) && PQC_TLS_ENABLE_MLKEM_1024
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLKEM1024_KEYGEN, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLKEM1024_KEYGEN, ret);
     #endif
 #endif
         if (ret != 0) {
@@ -9723,7 +9723,7 @@ static int TLSX_KeyShare_ProcessX25519_ex(WOLFSSL* ssl,
                         ssOutput, ssOutSz, EC25519_LITTLE_ENDIAN);
 #ifdef PQC_TLS_INSTRUMENTATION
             PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_X25519_SHARED_SECRET,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
 #endif
         #ifdef WOLFSSL_ASYNC_CRYPT
             if (ret == WC_NO_ERR_TRACE(WC_PENDING_E)) {
@@ -10186,13 +10186,13 @@ static int TLSX_KeyShare_ProcessPqcClient_ex(WOLFSSL* ssl,
 #ifdef PQC_TLS_INSTRUMENTATION
     #if defined(PQC_TLS_ENABLE_MLKEM_512) && PQC_TLS_ENABLE_MLKEM_512
         PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLKEM512_DECAPSULATE,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
     #elif defined(PQC_TLS_ENABLE_MLKEM_768) && PQC_TLS_ENABLE_MLKEM_768
         PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLKEM768_DECAPSULATE,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
     #elif defined(PQC_TLS_ENABLE_MLKEM_1024) && PQC_TLS_ENABLE_MLKEM_1024
         PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLKEM1024_DECAPSULATE,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
     #endif
 #endif
         PRIVATE_KEY_LOCK();

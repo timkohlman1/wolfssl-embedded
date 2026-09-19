@@ -5420,7 +5420,7 @@ int RsaVerify(WOLFSSL* ssl, byte* in, word32 inSz, byte** out, int sigAlgo,
             ret = wc_RsaPSS_VerifyInline(in, inSz, out, hashType, mgf, key);
 #ifdef PQC_TLS_INSTRUMENTATION
             PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_VERIFY,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
 #endif
         }
     }
@@ -5444,7 +5444,7 @@ int RsaVerify(WOLFSSL* ssl, byte* in, word32 inSz, byte** out, int sigAlgo,
 #endif
         ret = wc_RsaSSL_VerifyInline(in, inSz, out, key);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_VERIFY, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_VERIFY, ret);
 #endif
     }
 
@@ -5540,7 +5540,7 @@ int VerifyRsaSign(WOLFSSL* ssl, byte* verifySig, word32 sigSz,
             ret = wc_RsaPSS_VerifyInline(verifySig, sigSz, &out, hashType, mgf,
                                          key);
 #ifdef PQC_TLS_INSTRUMENTATION
-            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_VERIFY, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_VERIFY, ret);
 #endif
             if (ret > 0) {
     #ifdef HAVE_SELFTEST
@@ -5581,7 +5581,7 @@ int VerifyRsaSign(WOLFSSL* ssl, byte* verifySig, word32 sigSz,
 #endif
             ret = wc_RsaSSL_VerifyInline(verifySig, sigSz, &out, key);
 #ifdef PQC_TLS_INSTRUMENTATION
-            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_VERIFY, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_VERIFY, ret);
 #endif
         }
 
@@ -5797,7 +5797,7 @@ int EccSign(WOLFSSL* ssl, const byte* in, word32 inSz, byte* out,
 #endif
         ret = wc_ecc_sign_hash(in, inSz, out, outSz, ssl->rng, key);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_ECDSA_SIGN, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_ECDSA_SIGN, ret);
 #endif
     }
 
@@ -5865,7 +5865,9 @@ int EccVerify(WOLFSSL* ssl, const byte* in, word32 inSz, const byte* out,
 #endif
         ret = wc_ecc_verify_hash(in, inSz, out, outSz, &ssl->eccVerifyRes, key);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_ECDSA_VERIFY, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_ECDSA_VERIFY,
+            (ret != 0) ? ret :
+            ((ssl->eccVerifyRes != 0) ? 0 : VERIFY_SIGN_ERROR));
 #endif
     }
 
@@ -5958,15 +5960,15 @@ int EccSharedSecret(WOLFSSL* ssl, ecc_key* priv_key, ecc_key* pub_key,
             if ((priv_key != NULL) && (priv_key->dp != NULL)) {
                 if (priv_key->dp->size == 32) {
                     PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_P256_SHARED_SECRET,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
                 }
                 else if (priv_key->dp->size == 48) {
                     PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_P384_SHARED_SECRET,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
                 }
                 else if (priv_key->dp->size == 66) {
                     PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_P521_SHARED_SECRET,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
                 }
             }
 #endif
@@ -6054,13 +6056,13 @@ int EccMakeKey(WOLFSSL* ssl, ecc_key* key, ecc_key* peer)
         ret = wc_ecc_make_key_ex(ssl->rng, keySz, key, ecc_curve);
 #ifdef PQC_TLS_INSTRUMENTATION
         if (keySz == 32) {
-            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_P256_KEYGEN, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_P256_KEYGEN, ret);
         }
         else if (keySz == 48) {
-            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_P384_KEYGEN, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_P384_KEYGEN, ret);
         }
         else if (keySz == 66) {
-            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_P521_KEYGEN, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_P521_KEYGEN, ret);
         }
 #endif
     }
@@ -6415,7 +6417,7 @@ static int X25519SharedSecret(WOLFSSL* ssl, curve25519_key* priv_key,
                                                  EC25519_LITTLE_ENDIAN);
 #ifdef PQC_TLS_INSTRUMENTATION
             PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_X25519_SHARED_SECRET,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
 #endif
         }
     }
@@ -6461,7 +6463,7 @@ static int X25519MakeKey(WOLFSSL* ssl, curve25519_key* key,
 #endif
         ret = wc_curve25519_make_key(ssl->rng, CURVE25519_KEYSIZE, key);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_X25519_KEYGEN, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_X25519_KEYGEN, ret);
 #endif
     }
 
@@ -15803,7 +15805,7 @@ PRAGMA_GCC_DIAG_POP
 #endif
     ret = ParseCertRelative(args->dCert, certType, verify, SSL_CM(ssl), extraSigners);
 #ifdef PQC_TLS_INSTRUMENTATION
-    PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_X509_VERIFY, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+    PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_X509_VERIFY, ret);
 #endif
 
 #if defined(HAVE_RPK)

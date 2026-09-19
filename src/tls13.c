@@ -10437,7 +10437,7 @@ static int SendTls13CertificateVerify(WOLFSSL* ssl)
                                           ssl->rng);
 #ifdef PQC_TLS_INSTRUMENTATION
                 PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_SIGN,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
 #endif
                 args->length = (word16)args->sigLen;
             }
@@ -10463,7 +10463,7 @@ static int SendTls13CertificateVerify(WOLFSSL* ssl)
                               ssl->options.hashAlgo, (RsaKey*)ssl->hsKey,
                               ssl->buffers.key);
 #ifdef PQC_TLS_INSTRUMENTATION
-                PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_SIGN, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+                PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_SIGN, ret);
 #endif
                 if (ret == 0) {
                     args->length = (word16)args->sigLen;
@@ -10527,7 +10527,7 @@ static int SendTls13CertificateVerify(WOLFSSL* ssl)
                                   ssl->buffers.altKey);
 #ifdef PQC_TLS_INSTRUMENTATION
                     PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_RSA_SIGN,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
 #endif
 
                     if (ret == 0) {
@@ -10555,7 +10555,7 @@ static int SendTls13CertificateVerify(WOLFSSL* ssl)
                                 args->altSigData, args->altSigDataSz, ssl->rng);
 #ifdef PQC_TLS_INSTRUMENTATION
                     PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_SIGN,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+            ret);
 #endif
                 }
             #endif /* WOLFSSL_HAVE_MLDSA */
@@ -11589,7 +11589,7 @@ static int DoTls13CertificateVerify(WOLFSSL* ssl, byte* input,
                                             args->sigDataSz, &res);
 #ifdef PQC_TLS_INSTRUMENTATION
                 PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_VERIFY,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+                    (ret < 0) ? ret : ((res == 1) ? 0 : SIG_VERIFY_E));
 #endif
 
                 if ((ret >= 0) && (res == 1)) {
@@ -11708,7 +11708,7 @@ static int DoTls13CertificateVerify(WOLFSSL* ssl, byte* input,
                                         args->altSigDataSz, &res);
 #ifdef PQC_TLS_INSTRUMENTATION
                     PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_VERIFY,
-            PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+                    (ret < 0) ? ret : ((res == 1) ? 0 : SIG_VERIFY_E));
 #endif
 
                     if ((ret >= 0) && (res == 1)) {
@@ -13767,7 +13767,7 @@ int DoTls13HandShakeMsgType(WOLFSSL* ssl, byte* input, word32* inOutIdx,
 #endif
         ret = DoTls13ServerHello(ssl, input, inOutIdx, size, &type);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PHASE_SERVER_HELLO, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PHASE_SERVER_HELLO, ret);
 #endif
     #if !defined(WOLFSSL_NO_CLIENT_AUTH) && \
                ((defined(HAVE_ED25519) && !defined(NO_ED25519_CLIENT_AUTH)) || \
@@ -13791,7 +13791,7 @@ int DoTls13HandShakeMsgType(WOLFSSL* ssl, byte* input, word32* inOutIdx,
 #endif
         ret = DoTls13EncryptedExtensions(ssl, input, inOutIdx, size);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PHASE_ENCRYPTED_EXTENSIONS, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PHASE_ENCRYPTED_EXTENSIONS, ret);
 #endif
         break;
 
@@ -13906,7 +13906,7 @@ int DoTls13HandShakeMsgType(WOLFSSL* ssl, byte* input, word32* inOutIdx,
 #endif
         ret = DoTls13Certificate(ssl, input, inOutIdx, size);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PHASE_CERTIFICATE, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PHASE_CERTIFICATE, ret);
 #endif
         break;
 #endif
@@ -13920,7 +13920,7 @@ int DoTls13HandShakeMsgType(WOLFSSL* ssl, byte* input, word32* inOutIdx,
 #endif
         ret = DoTls13CertificateVerify(ssl, input, inOutIdx, size);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PHASE_CERTIFICATE_VERIFY, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PHASE_CERTIFICATE_VERIFY, ret);
 #endif
         break;
 #endif
@@ -13931,7 +13931,7 @@ int DoTls13HandShakeMsgType(WOLFSSL* ssl, byte* input, word32* inOutIdx,
 #endif
         ret = DoTls13Finished(ssl, input, inOutIdx, size, totalSz, NO_SNIFF);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PHASE_FINISHED, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PHASE_FINISHED, ret);
 #endif
         break;
 

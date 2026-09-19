@@ -402,7 +402,7 @@ int wc_PRF_TLS(byte* digest, word32 digLen, const byte* secret, word32 secLen,
         ret = wc_HKDF_Extract_ex(digest, salt, saltLen, ikm, ikmLen, prk, heap,
             devId);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_HKDF_EXTRACT, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_HKDF_EXTRACT, ret);
 #endif
 #else
         ret = wc_HKDF_Extract(digest, salt, saltLen, ikm, ikmLen, prk);
@@ -492,7 +492,7 @@ int wc_PRF_TLS(byte* digest, word32 digLen, const byte* secret, word32 secLen,
         ret = wc_HKDF_Expand_ex(digest, prk, prkLen, data, idx, okm, okmLen,
             heap, devId);
 #ifdef PQC_TLS_INSTRUMENTATION
-        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_HKDF_EXPAND, PQC_TLS_INSTRUMENTATION_RESULT_UNSPECIFIED);
+        PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_HKDF_EXPAND, ret);
 #endif
 #else
         ret = wc_HKDF_Expand(digest, prk, prkLen, data, idx, okm, okmLen);
