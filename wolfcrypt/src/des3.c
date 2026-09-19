@@ -1649,6 +1649,8 @@
         if (ret != 0)
             return ret;
 
+        des->keySet = 1;
+
         return wc_Des3_SetIV(des, iv);
     }
 
@@ -1793,6 +1795,10 @@
             return BAD_LENGTH_E;
         }
 
+        if (!des->keySet) {
+            return MISSING_KEY;
+        }
+
     #ifdef WOLF_CRYPTO_CB
         if (des->devId != INVALID_DEVID) {
             int ret = wc_CryptoCb_Des3Encrypt(des, out, in, sz);
@@ -1846,6 +1852,10 @@
 
         if (sz % DES_BLOCK_SIZE != 0) {
             return BAD_LENGTH_E;
+        }
+
+        if (!des->keySet) {
+            return MISSING_KEY;
         }
 
     #ifdef WOLF_CRYPTO_CB
@@ -1969,6 +1979,7 @@ int wc_Des3Init(Des3* des3, void* heap, int devId)
         return BAD_FUNC_ARG;
 
     des3->heap = heap;
+    des3->keySet = 0;
 
 #ifdef WOLF_CRYPTO_CB
     des3->devId = devId;
@@ -2002,6 +2013,7 @@ void wc_Des3Free(Des3* des3)
         (defined(WOLFSSL_ASYNC_CRYPT) && defined(WC_ASYNC_ENABLE_3DES))
     ForceZero(des3->devKey, sizeof(des3->devKey));
 #endif
+    ForceZero(des3, sizeof(Des3));
 #ifdef WOLFSSL_CHECK_MEM_ZERO
     wc_MemZero_Check(des3, sizeof(Des3));
 #endif

@@ -37,6 +37,13 @@
 #include <wolfssl/wolfcrypt/logging.h>
 #include <wolfssl/wolfcrypt/curve25519.h>
 
+#ifdef NO_INLINE
+    #include <wolfssl/wolfcrypt/misc.h>
+#else
+    #define WOLFSSL_MISC_INCLUDED
+    #include <wolfcrypt/src/misc.c>
+#endif
+
 #include <wolfssl/wolfcrypt/port/nxp/se050_port.h>
 
 #ifdef WOLFSSL_SE050_INIT
@@ -2113,6 +2120,10 @@ int se050_ecc_sign_hash_ex(const byte* in, word32 inLen, MATH_INT_T* r, MATH_INT
     size_t sigSz = sizeof(sigBuf);
     word32 rLen = 0;
     word32 sLen = 0;
+#ifndef WC_ALLOW_ECC_ZERO_HASH
+    byte hashIsZero = 0;
+    word32 zIdx;
+#endif
 
 #ifdef SE050_DEBUG
     printf("se050_ecc_sign_hash_ex: key %p, in %p (%d), out %p (%d), "
@@ -2123,6 +2134,15 @@ int se050_ecc_sign_hash_ex(const byte* in, word32 inLen, MATH_INT_T* r, MATH_INT
         outLen == NULL || key == NULL) {
         return BAD_FUNC_ARG;
     }
+
+#ifndef WC_ALLOW_ECC_ZERO_HASH
+    /* SE050 hardware does not reject all-zero digests; mirror the
+     * software path's check so behavior is consistent. */
+    for (zIdx = 0; zIdx < inLen; zIdx++)
+        hashIsZero |= in[zIdx];
+    if (hashIsZero == 0)
+        return ECC_BAD_ARG_E;
+#endif
 
     if (cfg_se050_i2c_pi == NULL) {
         return WC_HW_E;
@@ -3000,6 +3020,7 @@ int se050_ed25519_sign_msg(const byte* in, word32 inLen, byte* out,
                 status = sss_key_store_set_key(&host_keystore, &newKey, derBuf,
                                                 derSz, keySize * 8, NULL, 0);
             }
+            ForceZero(derBuf, sizeof(derBuf));
         }
         else {
             status = sss_key_object_get_handle(&newKey, keyId);

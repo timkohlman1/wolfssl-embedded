@@ -158,9 +158,9 @@ WOLFSSL_CERT_MANAGER* wolfSSL_CertManagerNew_ex(void* heap)
     #ifdef HAVE_FALCON
         cm->minFalconKeySz = MIN_FALCONKEY_SZ;
     #endif /* HAVE_FALCON */
-    #ifdef HAVE_DILITHIUM
-        cm->minDilithiumKeySz = MIN_DILITHIUMKEY_SZ;
-    #endif /* HAVE_DILITHIUM */
+    #ifdef WOLFSSL_HAVE_MLDSA
+        cm->minMlDsaKeySz = MIN_MLDSAKEY_SZ;
+    #endif /* WOLFSSL_HAVE_MLDSA */
     }
 
     /* Dispose of certificate manager on error. The reference count may not
@@ -633,6 +633,7 @@ int wolfSSL_CertManagerLoadCABufferType(WOLFSSL_CERT_MANAGER* cm,
         if (dCert == NULL) {
             ret = WOLFSSL_FATAL_ERROR;
         } else {
+            XMEMSET(dCert, 0, sizeof(DecodedCert));
             if (format == WOLFSSL_FILETYPE_PEM) {
             #ifndef WOLFSSL_PEM_TO_DER
                 ret = NOT_COMPILED_IN;
@@ -651,7 +652,6 @@ int wolfSSL_CertManagerLoadCABufferType(WOLFSSL_CERT_MANAGER* cm,
             }
 
             if (ret == WOLFSSL_SUCCESS) {
-                XMEMSET(dCert, 0, sizeof(DecodedCert));
                 wc_InitDecodedCert(dCert, buff,
                                 (word32)sz, cm->heap);
                 ret = wc_ParseCert(dCert, CERT_TYPE, NO_VERIFY, NULL);
@@ -3145,52 +3145,52 @@ int AddCA(WOLFSSL_CERT_MANAGER* cm, DerBuffer** pDer, int type, int verify)
                 }
                 break;
             #endif /* HAVE_FALCON */
-            #if defined(HAVE_DILITHIUM)
-            #ifdef WOLFSSL_DILITHIUM_FIPS204_DRAFT
+            #if defined(WOLFSSL_HAVE_MLDSA)
+            #ifdef WOLFSSL_MLDSA_FIPS204_DRAFT
             case DILITHIUM_LEVEL2k:
-                if (cm->minDilithiumKeySz < 0 ||
-                    DILITHIUM_LEVEL2_KEY_SIZE < (word16)cm->minDilithiumKeySz) {
-                    ret = DILITHIUM_KEY_SIZE_E;
-                    WOLFSSL_MSG("\tCA Dilithium level 2 key size error");
+                if (cm->minMlDsaKeySz < 0 ||
+                    WC_MLDSA_44_KEY_SIZE < (word16)cm->minMlDsaKeySz) {
+                    ret = MLDSA_KEY_SIZE_E;
+                    WOLFSSL_MSG("\tCA ML-DSA level 2 key size error");
                 }
                 break;
             case DILITHIUM_LEVEL3k:
-                if (cm->minDilithiumKeySz < 0 ||
-                    DILITHIUM_LEVEL3_KEY_SIZE < (word16)cm->minDilithiumKeySz) {
-                    ret = DILITHIUM_KEY_SIZE_E;
-                    WOLFSSL_MSG("\tCA Dilithium level 3 key size error");
+                if (cm->minMlDsaKeySz < 0 ||
+                    WC_MLDSA_65_KEY_SIZE < (word16)cm->minMlDsaKeySz) {
+                    ret = MLDSA_KEY_SIZE_E;
+                    WOLFSSL_MSG("\tCA ML-DSA level 3 key size error");
                 }
                 break;
             case DILITHIUM_LEVEL5k:
-                if (cm->minDilithiumKeySz < 0 ||
-                    DILITHIUM_LEVEL5_KEY_SIZE < (word16)cm->minDilithiumKeySz) {
-                    ret = DILITHIUM_KEY_SIZE_E;
-                    WOLFSSL_MSG("\tCA Dilithium level 5 key size error");
+                if (cm->minMlDsaKeySz < 0 ||
+                    WC_MLDSA_87_KEY_SIZE < (word16)cm->minMlDsaKeySz) {
+                    ret = MLDSA_KEY_SIZE_E;
+                    WOLFSSL_MSG("\tCA ML-DSA level 5 key size error");
                 }
                 break;
-            #endif /* WOLFSSL_DILITHIUM_FIPS204_DRAFT */
-            case ML_DSA_LEVEL2k:
-                if (cm->minDilithiumKeySz < 0 ||
-                    ML_DSA_LEVEL2_KEY_SIZE < (word16)cm->minDilithiumKeySz) {
-                    ret = DILITHIUM_KEY_SIZE_E;
-                    WOLFSSL_MSG("\tCA Dilithium level 2 key size error");
+            #endif /* WOLFSSL_MLDSA_FIPS204_DRAFT */
+            case ML_DSA_44k:
+                if (cm->minMlDsaKeySz < 0 ||
+                    WC_MLDSA_44_KEY_SIZE < (word16)cm->minMlDsaKeySz) {
+                    ret = MLDSA_KEY_SIZE_E;
+                    WOLFSSL_MSG("\tCA ML-DSA level 2 key size error");
                 }
                 break;
-            case ML_DSA_LEVEL3k:
-                if (cm->minDilithiumKeySz < 0 ||
-                    ML_DSA_LEVEL3_KEY_SIZE < (word16)cm->minDilithiumKeySz) {
-                    ret = DILITHIUM_KEY_SIZE_E;
-                    WOLFSSL_MSG("\tCA Dilithium level 3 key size error");
+            case ML_DSA_65k:
+                if (cm->minMlDsaKeySz < 0 ||
+                    WC_MLDSA_65_KEY_SIZE < (word16)cm->minMlDsaKeySz) {
+                    ret = MLDSA_KEY_SIZE_E;
+                    WOLFSSL_MSG("\tCA ML-DSA level 3 key size error");
                 }
                 break;
-            case ML_DSA_LEVEL5k:
-                if (cm->minDilithiumKeySz < 0 ||
-                    ML_DSA_LEVEL5_KEY_SIZE < (word16)cm->minDilithiumKeySz) {
-                    ret = DILITHIUM_KEY_SIZE_E;
-                    WOLFSSL_MSG("\tCA Dilithium level 5 key size error");
+            case ML_DSA_87k:
+                if (cm->minMlDsaKeySz < 0 ||
+                    WC_MLDSA_87_KEY_SIZE < (word16)cm->minMlDsaKeySz) {
+                    ret = MLDSA_KEY_SIZE_E;
+                    WOLFSSL_MSG("\tCA ML-DSA level 5 key size error");
                 }
                 break;
-            #endif /* HAVE_DILITHIUM */
+            #endif /* WOLFSSL_HAVE_MLDSA */
 
             default:
                 WOLFSSL_MSG("\tNo key size check done on CA");
@@ -3205,10 +3205,15 @@ int AddCA(WOLFSSL_CERT_MANAGER* cm, DerBuffer** pDer, int type, int verify)
     }
 #ifndef ALLOW_INVALID_CERTSIGN
     else if (ret == 0 && cert->isCA == 1 && type != WOLFSSL_USER_CA &&
-        type != WOLFSSL_TEMP_CA && !cert->selfSigned &&
+        !cert->selfSigned && cert->extKeyUsageSet &&
         (cert->extKeyUsage & KEYUSE_KEY_CERT_SIGN) == 0) {
-        /* Intermediate CA certs are required to have the keyCertSign
-        * extension set. User loaded root certs are not. */
+        /* Intermediate CA certs - including chain-supplied temporary CAs
+        * (WOLFSSL_TEMP_CA) added while building a path - are required to have
+        * the keyCertSign key usage when a Key Usage extension is present.
+        * Only operator-loaded root certs (WOLFSSL_USER_CA) and self-signed
+        * roots are exempt. Per RFC 5280 an absent Key Usage extension implies
+        * all usages, so only enforce this when the extension is actually
+        * present (extKeyUsageSet). */
         WOLFSSL_MSG("\tDoesn't have key usage certificate signing");
         ret = NOT_CA_ERROR;
     }

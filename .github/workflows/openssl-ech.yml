@@ -3,8 +3,9 @@ name: OpenSSL ECH Interop Test
 # START OF COMMON SECTION
 on:
   push:
-    branches: [ 'master', 'main', 'release/**' ]
+    branches: [ 'release/**' ]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [ '*' ]
 
 concurrency:
@@ -15,7 +16,7 @@ concurrency:
 jobs:
   build_wolfssl:
     name: Build wolfSSL
-    if: github.repository_owner == 'wolfssl'
+    if: ${{ (github.repository_owner == 'wolfssl') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     steps:
@@ -24,7 +25,9 @@ jobs:
         with:
           path: wolfssl
           configure: >-
-            --enable-ech --enable-sha512 --enable-aes CFLAGS='-DUSE_FLAT_TEST_H'
+            --enable-ech --enable-sha512 --enable-aes --enable-mlkem
+            CFLAGS='-DUSE_FLAT_TEST_H -DWOLFSSL_TEST_ECH'
+          check: true
           install: true
 
       - name: tar build-dir
@@ -45,7 +48,7 @@ jobs:
           tar -zcf build-dir.tgz build-dir
 
       - name: Upload built wolfSSL
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wolf-install-openssl-ech
           path: build-dir.tgz
@@ -53,12 +56,12 @@ jobs:
 
   build_openssl_ech:
     name: Build OpenSSL (feature/ech)
-    if: github.repository_owner == 'wolfssl'
+    if: ${{ (github.repository_owner == 'wolfssl') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout OpenSSL feature/ech branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: openssl/openssl
           ref: feature/ech
@@ -77,7 +80,7 @@ jobs:
         run: tar -zcf openssl-install.tgz openssl-install
 
       - name: Upload built OpenSSL
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: openssl-ech-install
           path: openssl-install.tgz
@@ -85,18 +88,18 @@ jobs:
 
   ech_interop_test:
     name: ECH Interop Test
-    if: github.repository_owner == 'wolfssl'
+    if: ${{ (github.repository_owner == 'wolfssl') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     needs: [build_wolfssl, build_openssl_ech]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Download wolfSSL build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: wolf-install-openssl-ech
 
       - name: Download OpenSSL build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: openssl-ech-install
 
@@ -144,6 +147,18 @@ jobs:
 
           echo -e "\nTesting default suite with OpenSSL client and wolfSSL server\n" &>> "$LOG_FILE"
           bash ./openssl-ech.sh client &>> "$LOG_FILE"
+
+          echo -e "\nTesting default suite with OpenSSL server and wolfSSL client (PQC)\n" &>> "$LOG_FILE"
+          bash ./openssl-ech.sh server --pqc SecP384r1MLKEM1024 &>> "$LOG_FILE"
+
+          echo -e "\nTesting default suite with OpenSSL client and wolfSSL server (PQC)\n" &>> "$LOG_FILE"
+          bash ./openssl-ech.sh client --pqc SecP384r1MLKEM1024 &>> "$LOG_FILE"
+
+          echo -e "\nTesting default suite with OpenSSL server and wolfSSL client (HRR)\n" &>> "$LOG_FILE"
+          bash ./openssl-ech.sh server --hrr &>> "$LOG_FILE"
+
+          echo -e "\nTesting default suite with OpenSSL client and wolfSSL server (HRR)\n" &>> "$LOG_FILE"
+          bash ./openssl-ech.sh client --hrr &>> "$LOG_FILE"
 
           # weird suite (DHKEM_P521_HKDF_SHA512, HKDF_SHA256, HPKE_AES_256_GCM)
           echo -e "\nTesting weird suite with OpenSSL server and wolfSSL client\n" &>> "$LOG_FILE"

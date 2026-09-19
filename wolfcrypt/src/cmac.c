@@ -71,6 +71,8 @@
  */
 int wc_CMAC_Grow(Cmac* cmac, const byte* in, int inSz)
 {
+    if ((cmac == NULL) || (in == NULL && inSz != 0))
+        return BAD_FUNC_ARG;
     return _wc_Hash_Grow(&cmac->msg, &cmac->used, &cmac->len, in, inSz, cmac->aes.heap);
 }
 #endif /* WOLFSSL_HASH_KEEP */
@@ -123,6 +125,13 @@ static int _InitCmac_common(Cmac* cmac, const byte* key, word32 keySz,
     useSW = cmac->useSWCrypt;
 #endif
     XMEMSET(cmac, 0, sizeof(Cmac));
+
+    /* Stash heap so the cryptocb can read it from the zeroed cmac. */
+#ifndef NO_AES
+    cmac->aes.heap = heap;
+#else
+    cmac->heap = heap;
+#endif
 
     /* Store id/label on the Cmac struct so the crypto callback can
      * inspect them to determine the hardware key slot. */
@@ -572,24 +581,32 @@ int wc_AesCmacVerify_ex(Cmac* cmac,
 {
     int ret = 0;
     byte a[WC_AES_BLOCK_SIZE];
-    word32 aSz = sizeof(a);
+    word32 aSz;
     int compareRet;
 
-    if (cmac == NULL || check == NULL || checkSz == 0 ||
-            (in == NULL && inSz != 0)) {
+    if (cmac == NULL || check == NULL || checkSz < WC_CMAC_TAG_MIN_SZ ||
+            checkSz > WC_AES_BLOCK_SIZE || (in == NULL && inSz != 0)) {
         return BAD_FUNC_ARG;
     }
 
-    XMEMSET(a, 0, aSz);
+    aSz = checkSz;
+    XMEMSET(a, 0, sizeof(a));
     ret = wc_AesCmacGenerate_ex(cmac,
                                 a, &aSz,
                                 in, inSz,
                                 key, keySz,
                                 heap,
                                 devId);
+    /* aSz is passed by reference to wc_AesCmacGenerate_ex, which on the
+     * WOLF_CRYPTO_CB path forwards it to a user-supplied callback that may
+     * write back any value. Reject anything that does not match the user
+     * provided length. */
+    if (ret == 0 && aSz != checkSz) {
+        ret = BAD_STATE_E;
+    }
     if (ret == 0) {
-        compareRet = ConstantCompare(check, a, (int)min(checkSz, aSz));
-        ret = compareRet ? 1 : 0;
+        compareRet = ConstantCompare(check, a, (int)aSz);
+        ret = compareRet ? MAC_CMP_FAILED_E : 0;
     }
 
     return ret;
@@ -603,7 +620,8 @@ int wc_AesCmacVerify(const byte* check, word32 checkSz,
     int ret = 0;
     WC_DECLARE_VAR(cmac, Cmac, 1, 0);
 
-    if (check == NULL || checkSz == 0 || (in == NULL && inSz > 0) ||
+    if (check == NULL || checkSz < WC_CMAC_TAG_MIN_SZ ||
+            checkSz > WC_AES_BLOCK_SIZE || (in == NULL && inSz > 0) ||
             key == NULL || keySz == 0) {
         return BAD_FUNC_ARG;
     }

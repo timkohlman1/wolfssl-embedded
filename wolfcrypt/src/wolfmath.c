@@ -43,12 +43,13 @@
 
 #if !defined(NO_BIG_INT) || defined(WOLFSSL_SP_MATH)
 
-#if (!defined(WC_NO_CACHE_RESISTANT) && \
-     ((defined(HAVE_ECC) && defined(ECC_TIMING_RESISTANT)) || \
-      (defined(USE_FAST_MATH) && defined(TFM_TIMING_RESISTANT)))) || \
-    ((defined(WOLFSSL_SP_MATH_ALL) && !defined(WOLFSSL_RSA_VERIFY_ONLY) && \
-      !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || !defined(NO_DH) || \
-     defined(OPENSSL_ALL) && defined(WC_PROTECT_ENCRYPTED_MEM))
+#if !defined(WC_NO_GLOBAL_OBJECT_POINTERS) && \
+    ((!defined(WC_NO_CACHE_RESISTANT) && \
+      ((defined(HAVE_ECC) && defined(ECC_TIMING_RESISTANT)) || \
+       (defined(USE_FAST_MATH) && defined(TFM_TIMING_RESISTANT)))) || \
+     ((defined(WOLFSSL_SP_MATH_ALL) && !defined(WOLFSSL_RSA_VERIFY_ONLY) && \
+       !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || !defined(NO_DH) || \
+      defined(OPENSSL_ALL) && defined(WC_PROTECT_ENCRYPTED_MEM)))
 
     /* all off / all on pointer addresses for constant calculations */
     /* ecc.c uses same table */
@@ -253,14 +254,18 @@ int wc_export_int(mp_int* mp, byte* buf, word32* len, word32 keySz,
     else {
         /* for WC_TYPE_UNSIGNED_BIN keySz is used to zero pad.
          * The key size is always returned as the size */
+        int mpSz = 0;
         if (*len < keySz) {
             *len = keySz;
             return BUFFER_E;
         }
         *len = keySz;
+        mpSz = mp_unsigned_bin_size(mp);
+        if (mpSz < 0 || (word32)mpSz > keySz) {
+            return BUFFER_E;
+        }
         XMEMSET(buf, 0, *len);
-        err = mp_to_unsigned_bin(mp, buf +
-            (keySz - (word32)mp_unsigned_bin_size(mp)));
+        err = mp_to_unsigned_bin(mp, buf + (keySz - (word32)mpSz));
     }
 
     return err;

@@ -120,6 +120,16 @@ static int wolfSSL_BIO_MEMORY_read(WOLFSSL_BIO* bio, void* buf, int len)
     WOLFSSL_ENTER("wolfSSL_BIO_MEMORY_read");
     }
 
+    /* Reject a negative length up front. Callers are expected to validate, but
+     * guarding here too prevents a negative len from defeating the signed
+     * bounds checks below (sz/memSz comparisons) and reaching XMEMCPY with a
+     * length of (size_t)-1. Return the same error the public wolfSSL_BIO_read()
+     * does for a negative length rather than silently reporting 0 bytes read. A
+     * zero length is handled correctly by the logic below (copies nothing). */
+    if (len < 0) {
+        return WOLFSSL_BIO_ERROR;
+    }
+
     sz = wolfSSL_BIO_pending(bio);
     if (sz > 0) {
         int memSz;
@@ -270,6 +280,10 @@ int wolfSSL_BIO_read(WOLFSSL_BIO* bio, void* buf, int len)
 #endif
     {
     WOLFSSL_ENTER("wolfSSL_BIO_read");
+    }
+
+    if (len < 0) {
+        return WOLFSSL_BIO_ERROR;
     }
 
     /* info cb, abort if user returns <= 0*/
@@ -689,6 +703,10 @@ int wolfSSL_BIO_write(WOLFSSL_BIO* bio, const void* data, int len)
     word32 frmtSz = 0;
 
     WOLFSSL_ENTER("wolfSSL_BIO_write");
+
+    if (len < 0) {
+        return WOLFSSL_BIO_ERROR;
+    }
 
     /* info cb, abort if user returns <= 0*/
     if (front != NULL && front->infoCb != NULL) {
@@ -1569,6 +1587,10 @@ int wolfSSL_BIO_nread(WOLFSSL_BIO *bio, char **buf, int num)
             return 0;
         }
 
+        if (num < 0) {
+            return WOLFSSL_BIO_ERROR;
+        }
+
         /* get amount able to read and set buffer pointer */
         sz = wolfSSL_BIO_nread0(bio, buf);
         if (sz < 0) {
@@ -1621,6 +1643,10 @@ int wolfSSL_BIO_nwrite(WOLFSSL_BIO *bio, char **buf, int num)
         if (num == 0) {
             *buf = (char*)bio->ptr.mem_buf_data + bio->wrIdx;
             return 0;
+        }
+
+        if (num < 0) {
+            return WOLFSSL_BIO_ERROR;
         }
 
         if (bio->wrIdx < bio->rdIdx) {
@@ -2030,6 +2056,12 @@ void wolfSSL_BIO_set_init(WOLFSSL_BIO* bio, int init)
     WOLFSSL_ENTER("wolfSSL_BIO_set_init");
     if (bio != NULL)
         bio->init = (byte)(init != 0);
+}
+
+int wolfSSL_BIO_get_init(WOLFSSL_BIO* bio)
+{
+    WOLFSSL_ENTER("wolfSSL_BIO_get_init");
+    return bio != NULL && bio->init;
 }
 
 /* If flag is 0 then blocking is set, if 1 then non blocking.
@@ -3136,6 +3168,14 @@ int wolfSSL_BIO_flush(WOLFSSL_BIO* bio)
         WOLFSSL_ENTER("wolfSSL_BIO_push");
         if (top == NULL) {
             return append;
+        }
+        {
+            WOLFSSL_BIO* cur = append;
+            while (cur != NULL) {
+                if (cur == top)
+                    return top; /* would create cycle */
+                cur = cur->next;
+            }
         }
         top->next = append;
         if (append != NULL) {

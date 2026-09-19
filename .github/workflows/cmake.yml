@@ -2,23 +2,25 @@ name: WolfSSL CMake Build Tests
 
 on:
   push:
-    branches: [ 'master', 'main', 'release/**' ]
+    branches: [ 'release/**' ]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [ '*' ]
 
 jobs:
   build:
-    if: github.repository_owner == 'wolfssl'
+    if: ${{ (github.repository_owner == 'wolfssl') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-24.04
 
     steps:
 # pull wolfSSL
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Install cmake
       uses: ./.github/actions/install-apt-deps
       with:
         packages: cmake
+        ghcr-debs-tag: ubuntu-24.04-full
 
 # build wolfssl
     - name: Build wolfssl

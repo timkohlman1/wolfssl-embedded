@@ -67,6 +67,10 @@ static const char *wolfsentry_config_path = NULL;
 #include <wolfssl/test.h>
 #include <wolfssl/error-ssl.h>
 
+#ifdef WOLFSSL_SWDEV
+    #include "tests/swdev/swdev_loader.h"
+#endif
+
 #ifdef USE_FLAT_TEST_H
     #include "server.h"
 #else
@@ -487,6 +491,7 @@ int ServerEchoData(WOLFSSL* ssl, int clientfd, int echoData, int block,
                   ret = wolfSSL_write(ssl, buffer, (int)min((word32)len, (word32)rx_pos)),
                   ret <= 0);
             if (ret != (int)min((word32)len, (word32)rx_pos)) {
+                err = wolfSSL_get_error(ssl, 0);
                 LOG_ERROR("SSL_write echo error %d\n", err);
                 err_sys_ex(runWithErrors, "SSL_write failed");
             }
@@ -704,7 +709,7 @@ static void SetKeyShare(WOLFSSL* ssl, int onlyKeyShare, int useX25519,
     #endif
         }
         else if (usePqc == 1) {
-    #ifdef HAVE_PQC
+    #ifdef WOLFSSL_HAVE_MLKEM
             groups[count] = 0;
     #ifndef WOLFSSL_NO_ML_KEM
         #if !defined(WOLFSSL_NO_ML_KEM_512) && \
@@ -1082,7 +1087,7 @@ static const char* server_usage_msg[][71] = {
         "-7          Set minimum downgrade protocol version [0-4] "
            " SSLv3(0) - TLS1.3(4)\n",                                   /* 59 */
 #endif
-#ifdef HAVE_PQC
+#ifdef WOLFSSL_HAVE_MLKEM
         "--pqc <alg> Key Share with specified post-quantum algorithm only:\n"
 #ifndef WOLFSSL_NO_ML_KEM
             "            ML_KEM_512, ML_KEM_768, ML_KEM_1024,\n"
@@ -1309,7 +1314,7 @@ static const char* server_usage_msg[][71] = {
         "-7          最小ダウングレード可能なプロトコルバージョンを設定します [0-4] "
         " SSLv3(0) - TLS1.3(4)\n",                          /* 59 */
 #endif
-#ifdef HAVE_PQC
+#ifdef WOLFSSL_HAVE_MLKEM
         "--pqc <alg> post-quantum 名前付きグループとの鍵共有のみ:\n"
 #ifndef WOLFSSL_NO_ML_KEM
             "            ML_KEM_512, ML_KEM_768, ML_KEM_1024,"
@@ -1510,7 +1515,7 @@ static void Usage(void)
     printf("%s", msg[++msgId]); /* --wolfsentry-config */
 #endif
     printf("%s", msg[++msgId]); /* -7 */
-#ifdef HAVE_PQC
+#ifdef WOLFSSL_HAVE_MLKEM
     printf("%s", msg[++msgId]);     /* --pqc */
     printf("%s", msg[++msgId]);     /* --pqc options */
     printf("%s", msg[++msgId]);     /* more --pqc options */
@@ -1633,7 +1638,7 @@ THREAD_RETURN WOLFSSL_THREAD server_test(void* args)
 #ifndef NO_MULTIBYTE_PRINT
         { "ヘルプ", 0, 258 },
 #endif
-#if defined(HAVE_PQC)
+#if defined(WOLFSSL_HAVE_MLKEM)
         { "pqc", 1, 259 },
 #endif
 #ifdef WOLFSSL_SRTP
@@ -2453,7 +2458,7 @@ THREAD_RETURN WOLFSSL_THREAD server_test(void* args)
                 break;
 #endif
 
-#ifdef HAVE_PQC
+#ifdef WOLFSSL_HAVE_MLKEM
             case 259:
             {
                 usePqc = 1;
@@ -2688,7 +2693,7 @@ THREAD_RETURN WOLFSSL_THREAD server_test(void* args)
                    "file");
 #endif
 
-#ifdef HAVE_PQC
+#ifdef WOLFSSL_HAVE_MLKEM
     if (usePqc) {
         if (version == SERVER_DOWNGRADE_VERSION ||
             version == EITHER_DOWNGRADE_VERSION) {
@@ -2848,6 +2853,10 @@ THREAD_RETURN WOLFSSL_THREAD server_test(void* args)
             err_sys_ex(catastrophic, "can't set minimum downgrade version");
     }
 
+#ifdef WOLFSSL_EARLY_DATA
+    if (earlyData)
+        wolfSSL_CTX_set_max_early_data(ctx, 4096);
+#endif
 #ifdef OPENSSL_COMPATIBLE_DEFAULTS
     /* Restore wolfSSL verify defaults */
     wolfSSL_CTX_set_verify(ctx, WOLFSSL_VERIFY_DEFAULT, NULL);
@@ -3230,13 +3239,6 @@ THREAD_RETURN WOLFSSL_THREAD server_test(void* args)
         }
     }
 #endif
-
-#ifdef USE_WINDOWS_API
-    if (port == 0) {
-        /* Generate random port for testing */
-        port = GetRandomPort();
-    }
-#endif /* USE_WINDOWS_API */
 
 #ifdef WOLFSSL_ASYNC_CRYPT
     ret = wolfAsync_DevOpen(&devId);
@@ -4259,6 +4261,12 @@ exit:
 #ifdef WC_RNG_SEED_CB
         wc_SetSeed_Cb(WC_GENERATE_SEED_DEFAULT);
 #endif
+#ifdef WOLFSSL_SWDEV
+        if (wc_SwDev_Init() != 0) {
+            fprintf(stderr, "wc_SwDev_Init failed\n");
+            return EXIT_FAILURE;
+        }
+#endif
         ChangeToWolfRoot();
 
 #if !defined(NO_WOLFSSL_SERVER) && !defined(NO_TLS)
@@ -4271,6 +4279,9 @@ exit:
         fprintf(stderr, "Server not compiled in!\n");
 #endif
 
+#ifdef WOLFSSL_SWDEV
+        wc_SwDev_Cleanup();
+#endif
         wolfSSL_Cleanup();
         FreeTcpReady(&ready);
 

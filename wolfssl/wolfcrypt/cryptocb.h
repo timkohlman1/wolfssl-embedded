@@ -78,18 +78,22 @@
     #include <wolfssl/wolfcrypt/sha512.h>
 #endif
 #ifdef WOLFSSL_HAVE_MLKEM
-    #include <wolfssl/wolfcrypt/mlkem.h>
-#ifdef WOLFSSL_WC_MLKEM
     #include <wolfssl/wolfcrypt/wc_mlkem.h>
-#elif defined(HAVE_LIBOQS)
-    #include <wolfssl/wolfcrypt/ext_mlkem.h>
 #endif
-#endif
-#if defined(HAVE_DILITHIUM)
-    #include <wolfssl/wolfcrypt/dilithium.h>
+#if defined(WOLFSSL_HAVE_MLDSA)
+    #include <wolfssl/wolfcrypt/wc_mldsa.h>
 #endif
 #if defined(HAVE_FALCON)
     #include <wolfssl/wolfcrypt/falcon.h>
+#endif
+#if defined(WOLFSSL_HAVE_SLHDSA)
+    #include <wolfssl/wolfcrypt/wc_slhdsa.h>
+#endif
+#if defined(WOLFSSL_HAVE_LMS)
+    #include <wolfssl/wolfcrypt/wc_lms.h>
+#endif
+#if defined(WOLFSSL_HAVE_XMSS)
+    #include <wolfssl/wolfcrypt/wc_xmss.h>
 #endif
 
 
@@ -311,7 +315,8 @@ typedef struct wc_CryptoInfo {
                 int         type; /* enum wc_PqcKemType */
             } pqc_decaps;
         #endif
-        #if defined(HAVE_FALCON) || defined(HAVE_DILITHIUM)
+        #if defined(HAVE_FALCON) || defined(WOLFSSL_HAVE_MLDSA) || \
+            defined(WOLFSSL_HAVE_SLHDSA)
             struct {
                 WC_RNG*     rng;
                 int         size;
@@ -349,6 +354,35 @@ typedef struct wc_CryptoInfo {
                 int         type; /* enum wc_PqcSignatureType */
             } pqc_sig_check;
         #endif
+        #if defined(WOLFSSL_HAVE_LMS) || defined(WOLFSSL_HAVE_XMSS)
+            struct {
+                WC_RNG*     rng;
+                void*       key;
+                int         type; /* enum wc_PqcStatefulSignatureType */
+            } pqc_stateful_sig_kg;
+            struct {
+                const byte* msg;
+                word32      msgSz;
+                byte*       out;
+                word32*     outSz;
+                void*       key;
+                int         type; /* enum wc_PqcStatefulSignatureType */
+            } pqc_stateful_sig_sign;
+            struct {
+                const byte* sig;
+                word32      sigSz;
+                const byte* msg;
+                word32      msgSz;
+                int*        res;
+                void*       key;
+                int         type; /* enum wc_PqcStatefulSignatureType */
+            } pqc_stateful_sig_verify;
+            struct {
+                void*       key;
+                word32*     sigsLeft;
+                int         type; /* enum wc_PqcStatefulSignatureType */
+            } pqc_stateful_sig_sigs_left;
+        #endif
 #ifdef HAVE_ANONYMOUS_INLINE_AGGREGATES
         };
 #endif
@@ -384,14 +418,15 @@ typedef struct wc_CryptoInfo {
                 word32      sz;
             } aesctr;
         #endif /* WOLFSSL_AES_COUNTER */
-        #if defined(HAVE_AES_ECB)
+        #if defined(HAVE_AES_ECB) || defined(WOLFSSL_AES_DIRECT) || \
+            defined(WOLF_CRYPTO_CB_ONLY_AES)
             struct {
                 Aes*        aes;
                 byte*       out;
                 const byte* in;
                 word32      sz;
             } aesecb;
-        #endif /* HAVE_AES_ECB */
+        #endif /* HAVE_AES_ECB || WOLFSSL_AES_DIRECT || WOLF_CRYPTO_CB_ONLY_AES */
         #ifndef NO_DES3
             struct {
                 Des3*       des;
@@ -716,6 +751,20 @@ WOLFSSL_LOCAL int wc_CryptoCb_Ed25519Verify(const byte* sig, word32 sigLen,
     const byte* context, byte contextLen);
 #endif /* HAVE_ED25519 */
 
+#if defined(WOLFSSL_HAVE_LMS) || defined(WOLFSSL_HAVE_XMSS)
+WOLFSSL_LOCAL int wc_CryptoCb_PqcStatefulSigGetDevId(int type, void* key);
+
+WOLFSSL_LOCAL int wc_CryptoCb_PqcStatefulSigKeyGen(int type, void* key,
+    WC_RNG* rng);
+WOLFSSL_LOCAL int wc_CryptoCb_PqcStatefulSigSign(const byte* msg,
+    word32 msgSz, byte* out, word32* outSz, int type, void* key);
+WOLFSSL_LOCAL int wc_CryptoCb_PqcStatefulSigVerify(const byte* sig,
+    word32 sigSz, const byte* msg, word32 msgSz, int* res, int type,
+    void* key);
+WOLFSSL_LOCAL int wc_CryptoCb_PqcStatefulSigSigsLeft(int type, void* key,
+    word32* sigsLeft);
+#endif /* WOLFSSL_HAVE_LMS || WOLFSSL_HAVE_XMSS */
+
 #if defined(WOLFSSL_HAVE_MLKEM)
 WOLFSSL_LOCAL int wc_CryptoCb_PqcKemGetDevId(int type, void* key);
 
@@ -731,7 +780,8 @@ WOLFSSL_LOCAL int wc_CryptoCb_PqcDecapsulate(const byte* ciphertext,
     int type, void* key);
 #endif /* WOLFSSL_HAVE_MLKEM */
 
-#if defined(HAVE_FALCON) || defined(HAVE_DILITHIUM)
+#if defined(HAVE_FALCON) || defined(WOLFSSL_HAVE_MLDSA) || \
+    defined(WOLFSSL_HAVE_SLHDSA)
 WOLFSSL_LOCAL int wc_CryptoCb_PqcSigGetDevId(int type, void* key);
 
 WOLFSSL_LOCAL int wc_CryptoCb_MakePqcSignatureKey(WC_RNG* rng, int type,
@@ -747,7 +797,7 @@ WOLFSSL_LOCAL int wc_CryptoCb_PqcVerify(const byte* sig, word32 siglen,
 
 WOLFSSL_LOCAL int wc_CryptoCb_PqcSignatureCheckPrivKey(void* key, int type,
     const byte* pubKey, word32 pubKeySz);
-#endif /* HAVE_FALCON || HAVE_DILITHIUM */
+#endif /* HAVE_FALCON || WOLFSSL_HAVE_MLDSA || WOLFSSL_HAVE_SLHDSA */
 
 #ifndef NO_AES
 #ifdef HAVE_AESGCM
@@ -783,12 +833,13 @@ WOLFSSL_LOCAL int wc_CryptoCb_AesCbcDecrypt(Aes* aes, byte* out,
 WOLFSSL_LOCAL int wc_CryptoCb_AesCtrEncrypt(Aes* aes, byte* out,
                                const byte* in, word32 sz);
 #endif /* WOLFSSL_AES_COUNTER */
-#ifdef HAVE_AES_ECB
+#if defined(HAVE_AES_ECB) || defined(WOLFSSL_AES_DIRECT) || \
+    defined(WOLF_CRYPTO_CB_ONLY_AES)
 WOLFSSL_LOCAL int wc_CryptoCb_AesEcbEncrypt(Aes* aes, byte* out,
                                const byte* in, word32 sz);
 WOLFSSL_LOCAL int wc_CryptoCb_AesEcbDecrypt(Aes* aes, byte* out,
                                const byte* in, word32 sz);
-#endif /* HAVE_AES_ECB */
+#endif /* HAVE_AES_ECB || WOLFSSL_AES_DIRECT || WOLF_CRYPTO_CB_ONLY_AES */
 #ifdef WOLF_CRYPTO_CB_AES_SETKEY
 WOLFSSL_API int wc_CryptoCb_AesSetKey(Aes* aes, const byte* key, word32 keySz);
 #endif /* WOLF_CRYPTO_CB_AES_SETKEY */
@@ -820,7 +871,11 @@ WOLFSSL_LOCAL int wc_CryptoCb_Sha384Hash(wc_Sha384* sha384, const byte* in,
 #endif
 #ifdef WOLFSSL_SHA512
 WOLFSSL_LOCAL int wc_CryptoCb_Sha512Hash(wc_Sha512* sha512, const byte* in,
-    word32 inSz, byte* digest, size_t digestSz);
+    word32 inSz, byte* digest
+#if !(defined(HAVE_FIPS) && FIPS_VERSION_LT(7,0))
+    , size_t digestSz
+#endif
+    );
 #endif
 
 #ifdef WOLFSSL_SHA3

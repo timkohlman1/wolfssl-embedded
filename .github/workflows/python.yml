@@ -3,8 +3,9 @@ name: Python Tests
 # START OF COMMON SECTION
 on:
   push:
-    branches: [ 'master', 'main', 'release/**' ]
+    branches: [ 'release/**' ]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [ '*' ]
 
 concurrency:
@@ -15,7 +16,7 @@ concurrency:
 jobs:
   build_wolfssl:
     name: Build wolfSSL
-    if: github.repository_owner == 'wolfssl'
+    if: ${{ (github.repository_owner == 'wolfssl') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -33,7 +34,7 @@ jobs:
         run: tar -zcf build-dir.tgz build-dir
 
       - name: Upload built lib
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wolf-install-python
           path: build-dir.tgz
@@ -93,13 +94,13 @@ jobs:
                 test_xmlrpc
                 test_docxmlrpc
     name: Python ${{ matrix.python_ver }}
-    if: github.repository_owner == 'wolfssl'
+    if: ${{ (github.repository_owner == 'wolfssl') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     needs: build_wolfssl
     steps:
       - name: Checkout wolfSSL CI actions
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           sparse-checkout: .github/actions
           fetch-depth: 1
@@ -108,9 +109,10 @@ jobs:
         uses: ./.github/actions/install-apt-deps
         with:
           packages: build-essential autoconf automake autoconf-archive pkgconf libffi-dev libbz2-dev libreadline-dev libsqlite3-dev zlib1g-dev libncursesw5-dev libgdbm-dev libnss3-dev liblzma-dev uuid-dev pkg-config
+          ghcr-debs-tag: ubuntu-24.04-full
 
       - name: Download wolfSSL
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: wolf-install-python
 
@@ -118,14 +120,14 @@ jobs:
         run: tar -xf build-dir.tgz
 
       - name: Checkout OSP
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: wolfssl/osp
           path: osp
           fetch-depth: 1
 
       - name: Checkout CPython
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: python/cpython
           ref: v${{ matrix.python_ver }}

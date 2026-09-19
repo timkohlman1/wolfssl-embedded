@@ -108,7 +108,6 @@ pub struct Lms {
 
 #[cfg(lms_sha256_256)]
 impl Lms {
-    pub const PARM_NONE: u32 = sys::wc_LmsParm_WC_LMS_PARM_NONE;
     pub const PARM_L1_H5_W1: u32 = sys::wc_LmsParm_WC_LMS_PARM_L1_H5_W1;
     pub const PARM_L1_H5_W2: u32 = sys::wc_LmsParm_WC_LMS_PARM_L1_H5_W2;
     pub const PARM_L1_H5_W4: u32 = sys::wc_LmsParm_WC_LMS_PARM_L1_H5_W4;
@@ -443,8 +442,8 @@ impl Lms {
     /// }
     /// ```
     #[cfg(all(lms_make_key, random))]
-    pub fn make_key(&mut self, rng: &mut RNG) -> Result<(), i32> {
-        let rc = unsafe { sys::wc_LmsKey_MakeKey(&mut self.ws_key, &mut rng.wc_rng) };
+    pub fn make_key(&mut self, rng: &RNG) -> Result<(), i32> {
+        let rc = unsafe { sys::wc_LmsKey_MakeKey(&mut self.ws_key, rng.wc_rng) };
         if rc != 0 {
             return Err(rc);
         }
@@ -545,17 +544,17 @@ impl Lms {
         Ok(sig_sz as usize)
     }
 
-    /// Return the number of signatures remaining for this key.
+    /// Return whether there are more signatures remaining for this key.
     ///
     /// Returns `Ok(true)` if at least one signature remains, `Ok(false)` if
     /// exhausted, or `Err(e)` on error. This is a conservative check only.
     ///
     /// # Returns
     ///
-    /// Returns either Ok(count) on success or Err(e) containing the wolfSSL
-    /// library error code value.
+    /// Returns either Ok(true) if any signatures remain, Ok(false) if
+    /// exhausted, or Err(e) containing the wolfSSL library error code value.
     #[cfg(lms_make_key)]
-    pub fn sigs_left(&mut self) -> Result<bool, i32> {
+    pub fn has_sigs_left(&mut self) -> Result<bool, i32> {
         let rc = unsafe { sys::wc_LmsKey_SigsLeft(&mut self.ws_key) };
         if rc < 0 {
             return Err(rc);
@@ -774,6 +773,9 @@ impl Lms {
         };
         if rc != 0 {
             return Err(rc);
+        }
+        if kid_ptr.is_null() {
+            return Err(sys::wolfCrypt_ErrorCodes_BAD_FUNC_ARG);
         }
         let src = unsafe { core::slice::from_raw_parts(kid_ptr, kid_sz as usize) };
         if kid.len() < src.len() {

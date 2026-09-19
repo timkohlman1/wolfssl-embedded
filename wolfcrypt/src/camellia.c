@@ -1521,7 +1521,7 @@ int wc_CamelliaSetKey(wc_Camellia* cam, const byte* key, word32 len, const byte*
 {
     int ret = 0;
 
-    if (cam == NULL) return BAD_FUNC_ARG;
+    if (cam == NULL || key == NULL) return BAD_FUNC_ARG;
 
     XMEMSET(cam->key, 0, WC_CAMELLIA_TABLE_BYTE_LEN);
 
@@ -1631,6 +1631,14 @@ int wc_CamelliaCbcDecrypt(wc_Camellia* cam, byte* out, const byte* in, word32 sz
     }
 
     return 0;
+}
+
+
+void wc_CamelliaFree(wc_Camellia* cam)
+{
+    if (cam == NULL)
+        return;
+    ForceZero(cam, sizeof(wc_Camellia));
 }
 
 

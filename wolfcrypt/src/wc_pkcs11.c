@@ -66,26 +66,23 @@
 #if defined(NO_PKCS11_RNG) && !defined(WC_NO_RNG)
     #define WC_NO_RNG
 #endif
-#if defined(NO_PKCS11_MLDSA) && defined(HAVE_DILITHIUM)
-    #undef HAVE_DILITHIUM
+#if defined(NO_PKCS11_MLDSA) && defined(WOLFSSL_HAVE_MLDSA)
+    #undef WOLFSSL_HAVE_MLDSA
 #endif
-#if defined(WOLFSSL_HAVE_MLKEM) && defined(WOLFSSL_WC_MLKEM)
-    #define HAVE_PKCS11_MLKEM
-#endif
-#if defined(NO_PKCS11_MLKEM) && defined(HAVE_PKCS11_MLKEM)
-    #undef HAVE_PKCS11_MLKEM
+#if defined(NO_PKCS11_MLKEM) && defined(WOLFSSL_HAVE_MLKEM)
+    #undef WOLFSSL_HAVE_MLKEM
 #endif
 
 
 #if (defined(HAVE_ECC) && !defined(NO_PKCS11_ECDH)) || \
-    defined(HAVE_PKCS11_MLKEM)
+    defined(WOLFSSL_HAVE_MLKEM)
 /* Pointer to false required for templates. */
 static CK_BBOOL ckFalse = CK_FALSE;
 #endif
 #if !defined(NO_RSA) || defined(HAVE_ECC) || (!defined(NO_AES) && \
            (defined(HAVE_AESGCM) || defined(HAVE_AES_CBC))) || \
-           !defined(NO_HMAC) || defined(HAVE_DILITHIUM) || \
-           defined(HAVE_PKCS11_MLKEM)
+           !defined(NO_HMAC) || defined(WOLFSSL_HAVE_MLDSA) || \
+           defined(WOLFSSL_HAVE_MLKEM)
 /* Pointer to true required for templates. */
 static CK_BBOOL ckTrue  = CK_TRUE;
 #endif
@@ -98,16 +95,16 @@ static CK_KEY_TYPE rsaKeyType   = CKK_RSA;
 /* Pointer to EC key type required for templates. */
 static CK_KEY_TYPE ecKeyType    = CKK_EC;
 #endif
-#if defined(HAVE_PKCS11_MLKEM)
+#if defined(WOLFSSL_HAVE_MLKEM)
 /* Pointer to ML-KEM key type required for templates. */
 static CK_KEY_TYPE mlkemKeyType = CKK_ML_KEM;
 #endif
-#if defined(HAVE_DILITHIUM)
+#if defined(WOLFSSL_HAVE_MLDSA)
 /* Pointer to ML-DSA key type required for templates. */
 static CK_KEY_TYPE mldsaKeyType = CKK_ML_DSA;
 #endif
-#if !defined(NO_RSA) || defined(HAVE_ECC) || defined(HAVE_DILITHIUM) || \
-    defined(HAVE_PKCS11_MLKEM)
+#if !defined(NO_RSA) || defined(HAVE_ECC) || defined(WOLFSSL_HAVE_MLDSA) || \
+    defined(WOLFSSL_HAVE_MLKEM)
 /* Pointer to public key class required for templates. */
 static CK_OBJECT_CLASS pubKeyClass     = CKO_PUBLIC_KEY;
 /* Pointer to private key class required for templates. */
@@ -115,7 +112,7 @@ static CK_OBJECT_CLASS privKeyClass    = CKO_PRIVATE_KEY;
 #endif
 #if (!defined(NO_AES) && (defined(HAVE_AESGCM) || defined(HAVE_AES_CBC))) || \
             !defined(NO_HMAC) || (defined(HAVE_ECC) && !defined(NO_PKCS11_ECDH)) || \
-            defined(HAVE_PKCS11_MLKEM)
+            defined(WOLFSSL_HAVE_MLKEM)
 /* Pointer to secret key class required for templates. */
 static CK_OBJECT_CLASS secretKeyClass  = CKO_SECRET_KEY;
 #endif
@@ -1565,6 +1562,8 @@ static int Pkcs11CreateEccPrivateKey(CK_OBJECT_HANDLE* privateKey,
                 ret = WC_HW_E;
             }
         }
+        if (priv != NULL)
+            ForceZero(priv, privLen);
         XFREE(priv, private_key->heap, DYNAMIC_TYPE_TMP_BUFFER);
     }
 
@@ -1572,7 +1571,7 @@ static int Pkcs11CreateEccPrivateKey(CK_OBJECT_HANDLE* privateKey,
 }
 #endif
 
-#ifdef HAVE_PKCS11_MLKEM
+#ifdef WOLFSSL_HAVE_MLKEM
 /**
  * Create a PKCS#11 object containing the ML-KEM public key data.
  */
@@ -1772,9 +1771,9 @@ static int Pkcs11CreateMlKemPrivateKey(CK_OBJECT_HANDLE* privateKey,
 
     return ret;
 }
-#endif /* HAVE_PKCS11_MLKEM */
+#endif /* WOLFSSL_HAVE_MLKEM */
 
-#ifdef HAVE_DILITHIUM
+#ifdef WOLFSSL_HAVE_MLDSA
 /**
  * Create a PKCS#11 object containing the ML-DSA public key data.
  * @param   handle      [out]   Handle to public key object.
@@ -1787,7 +1786,7 @@ static int Pkcs11CreateMlKemPrivateKey(CK_OBJECT_HANDLE* privateKey,
  */
 static int Pkcs11CreateMldsaPublicKey(CK_OBJECT_HANDLE* handle,
                                       Pkcs11Session* session,
-                                      MlDsaKey* key,
+                                      wc_MlDsaKey* key,
                                       CK_MECHANISM_INFO_PTR mechInfo)
 {
     int                          ret = 0;
@@ -1825,21 +1824,21 @@ static int Pkcs11CreateMldsaPublicKey(CK_OBJECT_HANDLE* handle,
     }
 
     if ((key->level == WC_ML_DSA_44) &&
-        (mechInfo->ulMinKeySize <= ML_DSA_LEVEL2_PUB_KEY_SIZE) &&
-        (mechInfo->ulMaxKeySize >= ML_DSA_LEVEL2_PUB_KEY_SIZE)) {
-        publicKeyLen = ML_DSA_LEVEL2_PUB_KEY_SIZE;
+        (mechInfo->ulMinKeySize <= WC_MLDSA_44_PUB_KEY_SIZE) &&
+        (mechInfo->ulMaxKeySize >= WC_MLDSA_44_PUB_KEY_SIZE)) {
+        publicKeyLen = WC_MLDSA_44_PUB_KEY_SIZE;
         param_set = CKP_ML_DSA_44;
     }
     else if ((key->level == WC_ML_DSA_65) &&
-             (mechInfo->ulMinKeySize <= ML_DSA_LEVEL3_PUB_KEY_SIZE) &&
-             (mechInfo->ulMaxKeySize >= ML_DSA_LEVEL3_PUB_KEY_SIZE)) {
-        publicKeyLen = ML_DSA_LEVEL3_PUB_KEY_SIZE;
+             (mechInfo->ulMinKeySize <= WC_MLDSA_65_PUB_KEY_SIZE) &&
+             (mechInfo->ulMaxKeySize >= WC_MLDSA_65_PUB_KEY_SIZE)) {
+        publicKeyLen = WC_MLDSA_65_PUB_KEY_SIZE;
         param_set = CKP_ML_DSA_65;
     }
     else if ((key->level == WC_ML_DSA_87) &&
-             (mechInfo->ulMinKeySize <= ML_DSA_LEVEL5_PUB_KEY_SIZE) &&
-             (mechInfo->ulMaxKeySize >= ML_DSA_LEVEL5_PUB_KEY_SIZE)) {
-        publicKeyLen = ML_DSA_LEVEL5_PUB_KEY_SIZE;
+             (mechInfo->ulMinKeySize <= WC_MLDSA_87_PUB_KEY_SIZE) &&
+             (mechInfo->ulMaxKeySize >= WC_MLDSA_87_PUB_KEY_SIZE)) {
+        publicKeyLen = WC_MLDSA_87_PUB_KEY_SIZE;
         param_set = CKP_ML_DSA_87;
     }
     else {
@@ -1874,7 +1873,7 @@ static int Pkcs11CreateMldsaPublicKey(CK_OBJECT_HANDLE* handle,
  */
 static int Pkcs11CreateMldsaPrivateKey(CK_OBJECT_HANDLE* privateKey,
                                        Pkcs11Session* session,
-                                       MlDsaKey* key,
+                                       wc_MlDsaKey* key,
                                        CK_MECHANISM_INFO_PTR mechInfo)
 {
     int                          ret = 0;
@@ -1908,21 +1907,21 @@ static int Pkcs11CreateMldsaPrivateKey(CK_OBJECT_HANDLE* privateKey,
     }
 
     if ((key->level == WC_ML_DSA_44) &&
-        (mechInfo->ulMinKeySize <= ML_DSA_LEVEL2_PUB_KEY_SIZE) &&
-        (mechInfo->ulMaxKeySize >= ML_DSA_LEVEL2_PUB_KEY_SIZE)) {
-        privateKeyLen = ML_DSA_LEVEL2_KEY_SIZE;
+        (mechInfo->ulMinKeySize <= WC_MLDSA_44_PUB_KEY_SIZE) &&
+        (mechInfo->ulMaxKeySize >= WC_MLDSA_44_PUB_KEY_SIZE)) {
+        privateKeyLen = WC_MLDSA_44_KEY_SIZE;
         param_set = CKP_ML_DSA_44;
     }
     else if ((key->level == WC_ML_DSA_65) &&
-             (mechInfo->ulMinKeySize <= ML_DSA_LEVEL3_PUB_KEY_SIZE) &&
-             (mechInfo->ulMaxKeySize >= ML_DSA_LEVEL3_PUB_KEY_SIZE)) {
-        privateKeyLen = ML_DSA_LEVEL3_KEY_SIZE;
+             (mechInfo->ulMinKeySize <= WC_MLDSA_65_PUB_KEY_SIZE) &&
+             (mechInfo->ulMaxKeySize >= WC_MLDSA_65_PUB_KEY_SIZE)) {
+        privateKeyLen = WC_MLDSA_65_KEY_SIZE;
         param_set = CKP_ML_DSA_65;
     }
     else if ((key->level == WC_ML_DSA_87) &&
-             (mechInfo->ulMinKeySize <= ML_DSA_LEVEL5_PUB_KEY_SIZE) &&
-             (mechInfo->ulMaxKeySize >= ML_DSA_LEVEL5_PUB_KEY_SIZE)) {
-        privateKeyLen = ML_DSA_LEVEL5_KEY_SIZE;
+             (mechInfo->ulMinKeySize <= WC_MLDSA_87_PUB_KEY_SIZE) &&
+             (mechInfo->ulMaxKeySize >= WC_MLDSA_87_PUB_KEY_SIZE)) {
+        privateKeyLen = WC_MLDSA_87_KEY_SIZE;
         param_set = CKP_ML_DSA_87;
     }
     else {
@@ -1944,12 +1943,12 @@ static int Pkcs11CreateMldsaPrivateKey(CK_OBJECT_HANDLE* privateKey,
 
     return ret;
 }
-#endif /* HAVE_DILITHIUM */
+#endif /* WOLFSSL_HAVE_MLDSA */
 
 #if !defined(NO_RSA) || defined(HAVE_ECC) || (!defined(NO_AES) && \
            (defined(HAVE_AESGCM) || defined(HAVE_AES_CBC))) || \
-           !defined(NO_HMAC) || defined(HAVE_DILITHIUM) || \
-           defined(HAVE_PKCS11_MLKEM)
+           !defined(NO_HMAC) || defined(WOLFSSL_HAVE_MLDSA) || \
+           defined(WOLFSSL_HAVE_MLKEM)
 /**
  * Check if mechanism is available in session on token.
  *
@@ -2191,7 +2190,7 @@ int wc_Pkcs11StoreKey(Pkcs11Token* token, int type, int clear, void* key)
                 break;
             }
     #endif
-    #ifdef HAVE_PKCS11_MLKEM
+    #ifdef WOLFSSL_HAVE_MLKEM
             case PKCS11_KEY_TYPE_MLKEM: {
                 MlKemKey* mlkemKey = (MlKemKey*)key;
                 CK_MECHANISM_INFO mechInfo;
@@ -2220,10 +2219,10 @@ int wc_Pkcs11StoreKey(Pkcs11Token* token, int type, int clear, void* key)
                 }
                 break;
             }
-    #endif /* HAVE_PKCS11_MLKEM */
-    #if defined(HAVE_DILITHIUM)
+    #endif /* WOLFSSL_HAVE_MLKEM */
+    #if defined(WOLFSSL_HAVE_MLDSA)
             case PKCS11_KEY_TYPE_MLDSA: {
-                MlDsaKey* mldsaKey = (MlDsaKey*) key;
+                wc_MlDsaKey* mldsaKey = (wc_MlDsaKey*) key;
                 CK_MECHANISM_INFO mechInfo;
 
                 ret = Pkcs11MechAvail(&session, CKM_ML_DSA, &mechInfo);
@@ -2247,19 +2246,19 @@ int wc_Pkcs11StoreKey(Pkcs11Token* token, int type, int clear, void* key)
                         session.func->C_DestroyObject(session.handle, privKey);
                     }
                 }
-            #if !defined(WOLFSSL_DILITHIUM_ASSIGN_KEY) && \
-                !defined(WOLFSSL_DILITHIUM_DYNAMIC_KEYS)
+            #if !defined(WOLFSSL_MLDSA_ASSIGN_KEY) && \
+                !defined(WOLFSSL_MLDSA_DYNAMIC_KEYS)
                 if (ret == 0 && clear) {
                     ForceZero(mldsaKey->k, sizeof(mldsaKey->k));
                 }
-            #elif defined(WOLFSSL_DILITHIUM_DYNAMIC_KEYS)
+            #elif defined(WOLFSSL_MLDSA_DYNAMIC_KEYS)
                 if (ret == 0 && clear && mldsaKey->k != NULL) {
                     ForceZero(mldsaKey->k, mldsaKey->kSz);
                 }
             #endif
                 break;
             }
-    #endif /* HAVE_DILITHIUM*/
+    #endif /* WOLFSSL_HAVE_MLDSA */
             default:
                 ret = NOT_COMPILED_IN;
                 break;
@@ -2636,7 +2635,7 @@ int wc_hash2sz(int hType)
     case WC_HASH_TYPE_SHA:
         return 20;
     case WC_HASH_TYPE_SHA224:
-        return 24;
+        return 28;
     case WC_HASH_TYPE_SHA256:
         return 32;
     case WC_HASH_TYPE_SHA384:
@@ -4243,7 +4242,7 @@ static int Pkcs11EccDeletePrivKey(Pkcs11Session* session, ecc_key* key)
 }
 #endif
 
-#ifdef HAVE_PKCS11_MLKEM
+#ifdef WOLFSSL_HAVE_MLKEM
 /* Finds the first ML-KEM key matching the key type. */
 static int Pkcs11FindMlKemKey(CK_OBJECT_HANDLE* handle,
                               CK_OBJECT_CLASS keyClass,
@@ -4704,7 +4703,7 @@ static int Pkcs11PqcKemKeyGen(Pkcs11Session* session, wc_CryptoInfo* info)
     int ret = 0;
 
     switch (info->pk.pqc_kem_kg.type) {
-        case WC_PQC_KEM_TYPE_KYBER:
+        case WC_PQC_KEM_TYPE_MLKEM:
             ret = Pkcs11MlKemKeyGen(session,
                                     (MlKemKey*)info->pk.pqc_kem_kg.key);
             break;
@@ -4721,7 +4720,7 @@ static int Pkcs11PqcKemEncapsulate(Pkcs11Session* session, wc_CryptoInfo* info)
     int ret = 0;
 
     switch (info->pk.pqc_encaps.type) {
-        case WC_PQC_KEM_TYPE_KYBER:
+        case WC_PQC_KEM_TYPE_MLKEM:
             ret = Pkcs11MlKemEncapsulate(session, info);
             break;
         default:
@@ -4737,7 +4736,7 @@ static int Pkcs11PqcKemDecapsulate(Pkcs11Session* session, wc_CryptoInfo* info)
     int ret = 0;
 
     switch (info->pk.pqc_decaps.type) {
-        case WC_PQC_KEM_TYPE_KYBER:
+        case WC_PQC_KEM_TYPE_MLKEM:
             ret = Pkcs11MlKemDecapsulate(session, info);
             break;
         default:
@@ -4747,9 +4746,9 @@ static int Pkcs11PqcKemDecapsulate(Pkcs11Session* session, wc_CryptoInfo* info)
 
     return ret;
 }
-#endif /* HAVE_PKCS11_MLKEM */
+#endif /* WOLFSSL_HAVE_MLKEM */
 
-#if defined(HAVE_DILITHIUM)
+#if defined(WOLFSSL_HAVE_MLDSA)
 /**
  * Find the PKCS#11 object containing the ML-DSA public or private key data.
  *
@@ -4764,7 +4763,7 @@ static int Pkcs11PqcKemDecapsulate(Pkcs11Session* session, wc_CryptoInfo* info)
 static int Pkcs11FindMldsaKey(CK_OBJECT_HANDLE* handle,
                               CK_OBJECT_CLASS keyClass,
                               Pkcs11Session* session,
-                              MlDsaKey* key)
+                              wc_MlDsaKey* key)
 {
     int                          ret = 0;
     CK_ULONG                     count = 0;
@@ -4811,7 +4810,7 @@ static int Pkcs11FindMldsaKey(CK_OBJECT_HANDLE* handle,
  * @return  MEMORY_E when a memory allocation fails.
  * @return  0 on success.
  */
-static int Pkcs11GetMldsaPublicKey(MlDsaKey* key,
+static int Pkcs11GetMldsaPublicKey(wc_MlDsaKey* key,
                                    Pkcs11Session* session,
                                    CK_OBJECT_HANDLE keyHandle)
 {
@@ -4853,11 +4852,11 @@ static int Pkcs11GetMldsaPublicKey(MlDsaKey* key,
         PKCS11_DUMP_TEMPLATE("ML-DSA Public Key", tmpl, tmplCnt);
     }
     if (ret == 0) {
-        if (pubKeySize == ML_DSA_LEVEL2_PUB_KEY_SIZE)
+        if (pubKeySize == WC_MLDSA_44_PUB_KEY_SIZE)
             wc_MlDsaKey_SetParams(key, WC_ML_DSA_44);
-        else if (pubKeySize == ML_DSA_LEVEL3_PUB_KEY_SIZE)
+        else if (pubKeySize == WC_MLDSA_65_PUB_KEY_SIZE)
             wc_MlDsaKey_SetParams(key, WC_ML_DSA_65);
-        else if (pubKeySize == ML_DSA_LEVEL5_PUB_KEY_SIZE)
+        else if (pubKeySize == WC_MLDSA_87_PUB_KEY_SIZE)
             wc_MlDsaKey_SetParams(key, WC_ML_DSA_87);
         else
             ret = WC_KEY_SIZE_E;
@@ -4931,7 +4930,7 @@ static int Pkcs11GetMldsaPreHash(int hashType,
  * @return  WC_HW_E when a PKCS#11 library call fails.
  * @return  0 on success.
  */
-static int Pkcs11MldsaKeyGen(Pkcs11Session* session, MlDsaKey* key)
+static int Pkcs11MldsaKeyGen(Pkcs11Session* session, wc_MlDsaKey* key)
 {
     int                          ret = 0;
     CK_RV                        rv;
@@ -4966,18 +4965,18 @@ static int Pkcs11MldsaKeyGen(Pkcs11Session* session, MlDsaKey* key)
     ret = Pkcs11MechAvail(session, CKM_ML_DSA_KEY_PAIR_GEN, &mechInfo);
     if (ret == 0) {
         if ((key->level == WC_ML_DSA_44) &&
-            (mechInfo.ulMinKeySize <= ML_DSA_LEVEL2_PUB_KEY_SIZE) &&
-            (mechInfo.ulMaxKeySize >= ML_DSA_LEVEL2_PUB_KEY_SIZE)) {
+            (mechInfo.ulMinKeySize <= WC_MLDSA_44_PUB_KEY_SIZE) &&
+            (mechInfo.ulMaxKeySize >= WC_MLDSA_44_PUB_KEY_SIZE)) {
             param_set = CKP_ML_DSA_44;
         }
         else if ((key->level == WC_ML_DSA_65) &&
-                 (mechInfo.ulMinKeySize <= ML_DSA_LEVEL3_PUB_KEY_SIZE) &&
-                 (mechInfo.ulMaxKeySize >= ML_DSA_LEVEL3_PUB_KEY_SIZE)) {
+                 (mechInfo.ulMinKeySize <= WC_MLDSA_65_PUB_KEY_SIZE) &&
+                 (mechInfo.ulMaxKeySize >= WC_MLDSA_65_PUB_KEY_SIZE)) {
             param_set = CKP_ML_DSA_65;
         }
         else if ((key->level == WC_ML_DSA_87) &&
-                 (mechInfo.ulMinKeySize <= ML_DSA_LEVEL5_PUB_KEY_SIZE) &&
-                 (mechInfo.ulMaxKeySize >= ML_DSA_LEVEL5_PUB_KEY_SIZE)) {
+                 (mechInfo.ulMinKeySize <= WC_MLDSA_87_PUB_KEY_SIZE) &&
+                 (mechInfo.ulMaxKeySize >= WC_MLDSA_87_PUB_KEY_SIZE)) {
             param_set = CKP_ML_DSA_87;
         }
         else {
@@ -5058,7 +5057,7 @@ static int Pkcs11MldsaSign(Pkcs11Session* session, wc_CryptoInfo* info)
     CK_MECHANISM      mech;
     CK_MECHANISM_INFO mechInfo;
     CK_OBJECT_HANDLE  privateKey = NULL_PTR;
-    MlDsaKey*         key = (MlDsaKey*) info->pk.pqc_sign.key;
+    wc_MlDsaKey*         key = (wc_MlDsaKey*) info->pk.pqc_sign.key;
 
     union {
         CK_SIGN_ADDITIONAL_CONTEXT      pure;
@@ -5201,7 +5200,7 @@ static int Pkcs11MldsaVerify(Pkcs11Session* session, wc_CryptoInfo* info)
     CK_MECHANISM      mech;
     CK_MECHANISM_INFO mechInfo;
     CK_OBJECT_HANDLE  publicKey = NULL_PTR;
-    MlDsaKey*         key = (MlDsaKey*) info->pk.pqc_verify.key;
+    wc_MlDsaKey*         key = (wc_MlDsaKey*) info->pk.pqc_verify.key;
 
     union {
         CK_SIGN_ADDITIONAL_CONTEXT      pure;
@@ -5331,10 +5330,10 @@ static int Pkcs11MldsaCheckPrivKey(Pkcs11Session* session, wc_CryptoInfo* info)
     word32           storedKeySize = 0;
     word32           idx = 0;
     CK_OBJECT_HANDLE privKeyHandle;
-    MlDsaKey*        privKey = (MlDsaKey*) info->pk.pqc_sig_check.key;
-    WC_DECLARE_VAR(pubKey, MlDsaKey, 1, privKey->heap);
+    wc_MlDsaKey*        privKey = (wc_MlDsaKey*) info->pk.pqc_sig_check.key;
+    WC_DECLARE_VAR(pubKey, wc_MlDsaKey, 1, privKey->heap);
 
-    WC_ALLOC_VAR_EX(pubKey, MlDsaKey, 1, privKey->heap, DYNAMIC_TYPE_DILITHIUM,
+    WC_ALLOC_VAR_EX(pubKey, wc_MlDsaKey, 1, privKey->heap, DYNAMIC_TYPE_MLDSA,
         ret = MEMORY_E);
 
     /* Get the ML-DSA public key object. */
@@ -5358,11 +5357,11 @@ static int Pkcs11MldsaCheckPrivKey(Pkcs11Session* session, wc_CryptoInfo* info)
 
     if (ret == 0) {
         if (key_level == WC_ML_DSA_44)
-            storedKeySize = ML_DSA_LEVEL2_PUB_KEY_SIZE;
+            storedKeySize = WC_MLDSA_44_PUB_KEY_SIZE;
         else if (key_level == WC_ML_DSA_65)
-            storedKeySize = ML_DSA_LEVEL3_PUB_KEY_SIZE;
+            storedKeySize = WC_MLDSA_65_PUB_KEY_SIZE;
         else if (key_level == WC_ML_DSA_87)
-            storedKeySize = ML_DSA_LEVEL5_PUB_KEY_SIZE;
+            storedKeySize = WC_MLDSA_87_PUB_KEY_SIZE;
         else
             ret = WC_KEY_SIZE_E;
     }
@@ -5386,7 +5385,7 @@ static int Pkcs11MldsaCheckPrivKey(Pkcs11Session* session, wc_CryptoInfo* info)
         wc_MlDsaKey_Free(pubKey);
     }
 
-    WC_FREE_VAR_EX(pubKey, privKey->heap, DYNAMIC_TYPE_DILITHIUM);
+    WC_FREE_VAR_EX(pubKey, privKey->heap, DYNAMIC_TYPE_MLDSA);
 
     return ret;
 }
@@ -5398,7 +5397,7 @@ static int Pkcs11MldsaCheckPrivKey(Pkcs11Session* session, wc_CryptoInfo* info)
  * @param  [in]  key      ML-DSA key.
  * @return  0 on success.
  */
-static int Pkcs11MldsaDeletePrivKey(Pkcs11Session* session, MlDsaKey* key)
+static int Pkcs11MldsaDeletePrivKey(Pkcs11Session* session, wc_MlDsaKey* key)
 {
     CK_OBJECT_HANDLE privateKey;
 
@@ -5427,9 +5426,9 @@ static int Pkcs11PqcSigKeyGen(Pkcs11Session* session, wc_CryptoInfo* info)
     int ret = 0;
 
     switch (info->pk.pqc_sig_kg.type) {
-        case WC_PQC_SIG_TYPE_DILITHIUM:
+        case WC_PQC_SIG_TYPE_MLDSA:
             ret = Pkcs11MldsaKeyGen(session,
-                                    (MlDsaKey*)info->pk.pqc_sig_kg.key);
+                                    (wc_MlDsaKey*)info->pk.pqc_sig_kg.key);
             break;
         default:
             ret = NOT_COMPILED_IN;
@@ -5452,7 +5451,7 @@ static int Pkcs11PqcSigSign(Pkcs11Session* session, wc_CryptoInfo* info)
     int ret = 0;
 
     switch (info->pk.pqc_sign.type) {
-        case WC_PQC_SIG_TYPE_DILITHIUM:
+        case WC_PQC_SIG_TYPE_MLDSA:
             ret = Pkcs11MldsaSign(session, info);
             break;
         default:
@@ -5477,7 +5476,7 @@ static int Pkcs11PqcSigVerify(Pkcs11Session* session, wc_CryptoInfo* info)
     int ret = 0;
 
     switch (info->pk.pqc_verify.type) {
-        case WC_PQC_SIG_TYPE_DILITHIUM:
+        case WC_PQC_SIG_TYPE_MLDSA:
             ret = Pkcs11MldsaVerify(session, info);
             break;
         default:
@@ -5503,7 +5502,7 @@ static int Pkcs11PqcSigCheckPrivKey(Pkcs11Session* session, wc_CryptoInfo* info)
     int ret = 0;
 
     switch (info->pk.pqc_sig_check.type) {
-        case WC_PQC_SIG_TYPE_DILITHIUM:
+        case WC_PQC_SIG_TYPE_MLDSA:
             ret = Pkcs11MldsaCheckPrivKey(session, info);
             break;
         default:
@@ -5513,7 +5512,7 @@ static int Pkcs11PqcSigCheckPrivKey(Pkcs11Session* session, wc_CryptoInfo* info)
 
     return ret;
 }
-#endif /* HAVE_DILITHIUM */
+#endif /* WOLFSSL_HAVE_MLDSA */
 
 #if !defined(NO_AES) && defined(HAVE_AESGCM)
 /**
@@ -6307,6 +6306,7 @@ exit:
  * @param  [in]  info   Cryptographic operation data.
  * @param  [in]  ctx    Context data for device - the token object.
  * @return  WC_HW_E when a PKCS#11 library call fails.
+ * @return  NOT_COMPILED_IN when an unsupported operation is requested.
  * @return  0 on success.
  */
 int wc_Pkcs11_CryptoDevCb(int devId, wc_CryptoInfo* info, void* ctx)
@@ -6329,8 +6329,8 @@ int wc_Pkcs11_CryptoDevCb(int devId, wc_CryptoInfo* info, void* ctx)
      */
     if (ret == 0) {
         if (info->algo_type == WC_ALGO_TYPE_PK) {
-#if !defined(NO_RSA) || defined(HAVE_ECC) || defined(HAVE_DILITHIUM) || \
-    defined(HAVE_PKCS11_MLKEM)
+#if !defined(NO_RSA) || defined(HAVE_ECC) || defined(WOLFSSL_HAVE_MLDSA) || \
+    defined(WOLFSSL_HAVE_MLKEM)
             switch (info->pk.type) {
     #ifndef NO_RSA
                 case WC_PK_TYPE_RSA:
@@ -6410,7 +6410,7 @@ int wc_Pkcs11_CryptoDevCb(int devId, wc_CryptoInfo* info, void* ctx)
                     }
                     break;
     #endif
-    #ifdef HAVE_PKCS11_MLKEM
+    #ifdef WOLFSSL_HAVE_MLKEM
                 case WC_PK_TYPE_PQC_KEM_KEYGEN:
                     ret = Pkcs11OpenSession(token, &session, readWrite);
                     if (ret == 0) {
@@ -6433,7 +6433,7 @@ int wc_Pkcs11_CryptoDevCb(int devId, wc_CryptoInfo* info, void* ctx)
                     }
                     break;
     #endif
-    #if defined(HAVE_DILITHIUM)
+    #if defined(WOLFSSL_HAVE_MLDSA)
                 case WC_PK_TYPE_PQC_SIG_KEYGEN:
                     ret = Pkcs11OpenSession(token, &session, readWrite);
                     if (ret == 0) {
@@ -6469,7 +6469,7 @@ int wc_Pkcs11_CryptoDevCb(int devId, wc_CryptoInfo* info, void* ctx)
             }
 #else
             ret = NOT_COMPILED_IN;
-#endif /* !NO_RSA || HAVE_ECC || HAVE_DILITHIUM || HAVE_PKCS11_MLKEM */
+#endif /* !NO_RSA || HAVE_ECC || WOLFSSL_HAVE_MLDSA || WOLFSSL_HAVE_MLKEM */
         }
         else if (info->algo_type == WC_ALGO_TYPE_CIPHER) {
     #ifndef NO_AES
@@ -6528,6 +6528,9 @@ int wc_Pkcs11_CryptoDevCb(int devId, wc_CryptoInfo* info, void* ctx)
                     }
                     break;
         #endif
+                default:
+                    ret = NOT_COMPILED_IN;
+                    break;
                 }
     #else
             ret = NOT_COMPILED_IN;
@@ -6535,10 +6538,46 @@ int wc_Pkcs11_CryptoDevCb(int devId, wc_CryptoInfo* info, void* ctx)
         }
         else if (info->algo_type == WC_ALGO_TYPE_HMAC) {
     #ifndef NO_HMAC
-            ret = Pkcs11OpenSession(token, &session, readWrite);
-            if (ret == 0) {
+            Hmac* hmac = info->hmac.hmac;
+
+            /* Sign ops are session-scoped; cache the session across
+             * multi-call HMAC dispatches. */
+            if (hmac != NULL && hmac->devCtx != NULL) {
+                session.func    = token->func;
+                session.slotId  = token->slotId;
+                session.version = token->version;
+                session.handle  =
+                    (CK_SESSION_HANDLE)(wc_ptr_t)hmac->devCtx;
                 ret = Pkcs11Hmac(&session, info);
-                Pkcs11CloseSession(token, &session);
+                if (ret != 0 ||
+                        hmac->innerHashKeyed
+                            != WC_HMAC_INNER_HASH_KEYED_DEV) {
+                    Pkcs11CloseSession(token, &session);
+                    hmac->devCtx = NULL;
+                    /* Don't leave stale DEV state past session close;
+                     * leave SW state (owned by software fallback). */
+                    if (hmac->innerHashKeyed
+                            == WC_HMAC_INNER_HASH_KEYED_DEV)
+                        hmac->innerHashKeyed = 0;
+                }
+            }
+            else {
+                ret = Pkcs11OpenSession(token, &session, readWrite);
+                if (ret == 0) {
+                    ret = Pkcs11Hmac(&session, info);
+                    if (ret == 0 && hmac != NULL &&
+                            hmac->innerHashKeyed
+                                == WC_HMAC_INNER_HASH_KEYED_DEV) {
+                        hmac->devCtx =
+                            (void*)(wc_ptr_t)session.handle;
+                    }
+                    else {
+                        Pkcs11CloseSession(token, &session);
+                        if (hmac != NULL && hmac->innerHashKeyed
+                                == WC_HMAC_INNER_HASH_KEYED_DEV)
+                            hmac->innerHashKeyed = 0;
+                    }
+                }
             }
     #else
             ret = NOT_COMPILED_IN;
@@ -6590,23 +6629,23 @@ int wc_Pkcs11_CryptoDevCb(int devId, wc_CryptoInfo* info, void* ctx)
             }
             else
     #endif
-    #ifdef HAVE_DILITHIUM
+    #ifdef WOLFSSL_HAVE_MLDSA
             if (info->free.algo == WC_ALGO_TYPE_PK &&
                 info->free.type == WC_PK_TYPE_PQC_SIG_KEYGEN &&
-                info->free.subType == WC_PQC_SIG_TYPE_DILITHIUM) {
+                info->free.subType == WC_PQC_SIG_TYPE_MLDSA) {
                 ret = Pkcs11OpenSession(token, &session, readWrite);
                 if (ret == 0) {
                     ret = Pkcs11MldsaDeletePrivKey(&session,
-                                                   (MlDsaKey*)info->free.obj);
+                                                   (wc_MlDsaKey*)info->free.obj);
                     Pkcs11CloseSession(token, &session);
                 }
             }
             else
     #endif
-    #ifdef HAVE_PKCS11_MLKEM
+    #ifdef WOLFSSL_HAVE_MLKEM
             if (info->free.algo == WC_ALGO_TYPE_PK &&
                 info->free.type == WC_PK_TYPE_PQC_KEM_KEYGEN &&
-                info->free.subType == WC_PQC_KEM_TYPE_KYBER) {
+                info->free.subType == WC_PQC_KEM_TYPE_MLKEM) {
                 ret = Pkcs11OpenSession(token, &session, readWrite);
                 if (ret == 0) {
                     ret = Pkcs11MlKemDeletePrivKey(&session,

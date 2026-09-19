@@ -434,6 +434,7 @@ int test_wc_PKCS12_encrypted_content_bounds(void)
         word32 regPkeySz = 0;
         word32 regCertSz = 0;
 
+        XMEMSET(regCiphertext, 0, sizeof(regCiphertext));
         /* Derive AES-256 key with the same PBKDF2 that DecryptContent uses */
         ExpectIntEQ(wc_PBKDF2(regKey, (const byte*)regPassword,
             (int)XSTRLEN(regPassword), regSalt, (int)sizeof(regSalt),
@@ -646,10 +647,13 @@ int test_wc_PKCS12_PBKDF(void)
                     salt2, (int)sizeof(salt2), 1000, 24, WC_SHA256, 1), 0);
     ExpectIntEQ(XMEMCMP(derived, verify2, 24), 0);
 
-    /* iterations <= 0 treated as 1 */
+    /* iterations <= 0 must be rejected */
+    #if !defined(HAVE_FIPS) || FIPS_VERSION3_GE(7,0,0)
     ExpectIntEQ(wc_PKCS12_PBKDF(derived, passwd, (int)sizeof(passwd),
-                    salt, (int)sizeof(salt), 0, 24, WC_SHA256, 1), 0);
-    ExpectIntEQ(XMEMCMP(derived, verify, 24), 0);
+                    salt, (int)sizeof(salt), 0, 24, WC_SHA256, 1), BAD_FUNC_ARG);
+    ExpectIntEQ(wc_PKCS12_PBKDF(derived, passwd, (int)sizeof(passwd),
+                    salt, (int)sizeof(salt), -1, 24, WC_SHA256, 1), BAD_FUNC_ARG);
+    #endif /* !HAVE_FIPS || FIPS_VERSION3_GE(7,0,0) */
 #endif
     return EXPECT_RESULT();
 }
@@ -713,6 +717,16 @@ int test_wc_PKCS12_PBKDF_ex(void)
                     salt, (int)sizeof(salt), 1, 24, WC_SHA256, 2, NULL), 0);
     ExpectIntEQ(wc_PKCS12_PBKDF_ex(derived, passwd, (int)sizeof(passwd),
                     salt, (int)sizeof(salt), 1, 24, WC_SHA256, 3, NULL), 0);
+
+    /* iterations <= 0 must be rejected */
+    #if !defined(HAVE_FIPS) || FIPS_VERSION3_GE(7,0,0)
+    ExpectIntEQ(wc_PKCS12_PBKDF_ex(derived, passwd, (int)sizeof(passwd),
+                    salt, (int)sizeof(salt), 0, 24, WC_SHA256, 1, NULL),
+                BAD_FUNC_ARG);
+    ExpectIntEQ(wc_PKCS12_PBKDF_ex(derived, passwd, (int)sizeof(passwd),
+                    salt, (int)sizeof(salt), -1, 24, WC_SHA256, 1, NULL),
+                BAD_FUNC_ARG);
+    #endif /* !HAVE_FIPS || FIPS_VERSION3_GE(7,0,0) */
 #endif
     return EXPECT_RESULT();
 }
