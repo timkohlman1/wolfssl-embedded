@@ -159,6 +159,9 @@
 #include <wolfssl/wolfcrypt/sha3.h>
 #include <wolfssl/wolfcrypt/cpuid.h>
 #include <wolfssl/wolfcrypt/error-crypt.h>
+#ifdef PQC_TLS_INSTRUMENTATION
+#include "pqc_tls_instrumentation.h"
+#endif
 #ifdef NO_INLINE
     #include <wolfssl/wolfcrypt/misc.h>
 #else
@@ -8322,6 +8325,12 @@ static void mldsa_make_priv_vecs(wc_MlDsaKey* key, sword32* s1,
 static int mldsa_sign_with_seed_mu(wc_MlDsaKey* key,
     const byte* seedMu, byte* sig, word32 *sigLen)
 {
+#ifdef PQC_TLS_INSTRUMENTATION
+    /* Count only the outer Sign_internal candidate loop. No I/O, timing reads,
+     * randomness or changes to rejection decisions are introduced here. */
+    word32 pqc_attempts = 0, pqc_rejected = 0;
+    word32 pqc_accepted = 0, pqc_aborted = 0;
+#endif
 #ifndef WOLFSSL_MLDSA_SIGN_SMALL_MEM
     int ret = 0;
     const wc_MlDsaParams* params = key->params;
@@ -8470,6 +8479,9 @@ static int mldsa_sign_with_seed_mu(wc_MlDsaKey* key,
             sword32* cs2 = ct0;
             byte* commit = sig;
 
+#ifdef PQC_TLS_INSTRUMENTATION
+            pqc_attempts++;
+#endif
             /* Step 12: Compute vector y from private random seed and kappa. */
             mldsa_vec_expand_mask(&key->shake, priv_rand_seed, kappa,
                 params->gamma1_bits, y, params->l);
@@ -8579,6 +8591,13 @@ static int mldsa_sign_with_seed_mu(wc_MlDsaKey* key,
                 WC_FREE_VAR_EX(w1e, key->heap, DYNAMIC_TYPE_MLDSA);
             }
 
+#ifdef PQC_TLS_INSTRUMENTATION
+            /* Classify the completed candidate before the kappa limit check.
+             * A cryptographic/helper error is not a rejection-sampling retry. */
+            if (ret != 0) pqc_aborted++;
+            else if (valid) pqc_accepted++;
+            else pqc_rejected++;
+#endif
             if (!valid) {
                 /* Too many attempts - something wrong with implementation. */
                 if ((kappa > (word16)(kappa + params->l))) {
@@ -8612,6 +8631,10 @@ static int mldsa_sign_with_seed_mu(wc_MlDsaKey* key,
         ForceZero(y, zeroSz);
     }
     XFREE(y, key->heap, DYNAMIC_TYPE_MLDSA);
+#ifdef PQC_TLS_INSTRUMENTATION
+    PQC_TLS_InstrumentationMLDSASampling(pqc_attempts, pqc_rejected,
+        pqc_accepted, pqc_aborted, ret);
+#endif
     return ret;
 #else
     int ret = 0;
@@ -8765,6 +8788,9 @@ static int mldsa_sign_with_seed_mu(wc_MlDsaKey* key,
         #endif
 
             valid = 1;
+#ifdef PQC_TLS_INSTRUMENTATION
+            pqc_attempts++;
+#endif
             /* Step 12: Compute vector y from private random seed and kappa. */
             mldsa_vec_expand_mask(&key->shake, priv_rand_seed, kappa,
                 params->gamma1_bits, y, params->l);
@@ -9149,6 +9175,13 @@ static int mldsa_sign_with_seed_mu(wc_MlDsaKey* key,
                 XMEMSET(h + idx, 0, (size_t)(params->omega - idx));
             }
 
+#ifdef PQC_TLS_INSTRUMENTATION
+            /* Classify the completed candidate before the kappa limit check.
+             * A cryptographic/helper error is not a rejection-sampling retry. */
+            if (ret != 0) pqc_aborted++;
+            else if (valid) pqc_accepted++;
+            else pqc_rejected++;
+#endif
             if (!valid) {
                 /* Too many attempts - something wrong with implementation. */
                 if ((kappa > (word16)(kappa + params->l))) {
@@ -9169,6 +9202,10 @@ static int mldsa_sign_with_seed_mu(wc_MlDsaKey* key,
         ForceZero(y, allocSz);
     }
     XFREE(y, key->heap, DYNAMIC_TYPE_MLDSA);
+#ifdef PQC_TLS_INSTRUMENTATION
+    PQC_TLS_InstrumentationMLDSASampling(pqc_attempts, pqc_rejected,
+        pqc_accepted, pqc_aborted, ret);
+#endif
     return ret;
 #endif
 }
