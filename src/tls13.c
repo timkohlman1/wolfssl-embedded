@@ -10429,14 +10429,14 @@ static int SendTls13CertificateVerify(WOLFSSL* ssl)
             if (ssl->hsType == DYNAMIC_TYPE_MLDSA) {
 #ifdef PQC_TLS_INSTRUMENTATION
                 PQC_TLS_InstrumentationBegin(
-                    PQC_TLS_PRIMITIVE_MLDSA65_SIGN);
+                    PQC_TLS_InstrumentationMLDSAEvent(((wc_MlDsaKey*)ssl->hsKey)->level, 1));
 #endif
                 ret = wc_MlDsaKey_SignCtx((wc_MlDsaKey*)ssl->hsKey, NULL, 0,
                                           sigOut, &args->sigLen,
                                           args->sigData, args->sigDataSz,
                                           ssl->rng);
 #ifdef PQC_TLS_INSTRUMENTATION
-                PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_SIGN,
+                PQC_TLS_InstrumentationEnd(PQC_TLS_InstrumentationMLDSAEvent(((wc_MlDsaKey*)ssl->hsKey)->level, 1),
             ret);
 #endif
                 args->length = (word16)args->sigLen;
@@ -10548,13 +10548,13 @@ static int SendTls13CertificateVerify(WOLFSSL* ssl)
                 if (ssl->hsAltType == DYNAMIC_TYPE_MLDSA) {
 #ifdef PQC_TLS_INSTRUMENTATION
                     PQC_TLS_InstrumentationBegin(
-                        PQC_TLS_PRIMITIVE_MLDSA65_SIGN);
+                        PQC_TLS_InstrumentationMLDSAEvent(((wc_MlDsaKey*)ssl->hsAltKey)->level, 1));
 #endif
                     ret = wc_MlDsaKey_SignCtx((wc_MlDsaKey*)ssl->hsAltKey,
                                 NULL, 0, sigOut, &args->altSigLen,
                                 args->altSigData, args->altSigDataSz, ssl->rng);
 #ifdef PQC_TLS_INSTRUMENTATION
-                    PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_SIGN,
+                    PQC_TLS_InstrumentationEnd(PQC_TLS_InstrumentationMLDSAEvent(((wc_MlDsaKey*)ssl->hsAltKey)->level, 1),
             ret);
 #endif
                 }
@@ -11582,13 +11582,13 @@ static int DoTls13CertificateVerify(WOLFSSL* ssl, byte* input,
                 WOLFSSL_MSG("Doing ML-DSA peer cert verify");
 #ifdef PQC_TLS_INSTRUMENTATION
                 PQC_TLS_InstrumentationBegin(
-                    PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
+                    PQC_TLS_InstrumentationMLDSAEvent(ssl->peerMlDsaKey->level, 0));
 #endif
                 ret = wc_MlDsaKey_VerifyCtx(ssl->peerMlDsaKey, sig, args->sigSz,
                                             NULL, 0, args->sigData,
                                             args->sigDataSz, &res);
 #ifdef PQC_TLS_INSTRUMENTATION
-                PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_VERIFY,
+                PQC_TLS_InstrumentationEnd(PQC_TLS_InstrumentationMLDSAEvent(ssl->peerMlDsaKey->level, 0),
                     (ret < 0) ? ret : ((res == 1) ? 0 : SIG_VERIFY_E));
 #endif
 
@@ -11700,14 +11700,14 @@ static int DoTls13CertificateVerify(WOLFSSL* ssl, byte* input,
                     WOLFSSL_MSG("Doing ML-DSA peer cert alt verify");
 #ifdef PQC_TLS_INSTRUMENTATION
                     PQC_TLS_InstrumentationBegin(
-                        PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
+                        PQC_TLS_InstrumentationMLDSAEvent(ssl->peerMlDsaKey->level, 0));
 #endif
                     ret = wc_MlDsaKey_VerifyCtx(ssl->peerMlDsaKey, sig,
                                         args->altSignatureSz, NULL, 0,
                                         args->altSigData,
                                         args->altSigDataSz, &res);
 #ifdef PQC_TLS_INSTRUMENTATION
-                    PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_VERIFY,
+                    PQC_TLS_InstrumentationEnd(PQC_TLS_InstrumentationMLDSAEvent(ssl->peerMlDsaKey->level, 0),
                     (ret < 0) ? ret : ((res == 1) ? 0 : SIG_VERIFY_E));
 #endif
 

@@ -17691,12 +17691,12 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 {
 #ifdef PQC_TLS_INSTRUMENTATION
                     PQC_TLS_InstrumentationBegin(
-                        PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
+                        PQC_TLS_InstrumentationMLDSAEvent(sigCtx->key.mldsa->level, 0));
 #endif
                     ret = wc_MlDsaKey_Verify(sigCtx->key.mldsa, sig, sigSz,
                                              buf, bufSz, &sigCtx->verify);
 #ifdef PQC_TLS_INSTRUMENTATION
-                    PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_VERIFY,
+                    PQC_TLS_InstrumentationEnd(PQC_TLS_InstrumentationMLDSAEvent(sigCtx->key.mldsa->level, 0),
                         (ret != 0) ? ret :
                         ((sigCtx->verify != 0) ? 0 : ASN_SIG_CONFIRM_E));
 #endif
@@ -17709,12 +17709,12 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 {
 #ifdef PQC_TLS_INSTRUMENTATION
                     PQC_TLS_InstrumentationBegin(
-                        PQC_TLS_PRIMITIVE_MLDSA65_VERIFY);
+                        PQC_TLS_InstrumentationMLDSAEvent(sigCtx->key.mldsa->level, 0));
 #endif
                     ret = wc_MlDsaKey_VerifyCtx(sigCtx->key.mldsa, sig, sigSz,
                         NULL, 0, buf, bufSz, &sigCtx->verify);
 #ifdef PQC_TLS_INSTRUMENTATION
-                    PQC_TLS_InstrumentationEnd(PQC_TLS_PRIMITIVE_MLDSA65_VERIFY,
+                    PQC_TLS_InstrumentationEnd(PQC_TLS_InstrumentationMLDSAEvent(sigCtx->key.mldsa->level, 0),
                         (ret != 0) ? ret :
                         ((sigCtx->verify != 0) ? 0 : ASN_SIG_CONFIRM_E));
 #endif
